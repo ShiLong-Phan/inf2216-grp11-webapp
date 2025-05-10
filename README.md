@@ -5,7 +5,7 @@ Welcome to the ICT2216 SSD web application repository.
 ## Hosting Information
 
 This server is hosted on **Docker** within an **EC2 instance**, with the following IP address:
-- **3.1.6.46**
+- **http://3.1.6.46**
 - Docker is already running on the ec2 server(ubuntu)
 
 ## Development Setup
