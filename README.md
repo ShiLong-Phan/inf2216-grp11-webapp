@@ -6,12 +6,14 @@ Welcome to the ICT2216 SSD web application repository.
 
 This server is hosted on **Docker** within an **EC2 instance**, with the following IP address:
 - **http://3.1.6.46**
+- **https://crumbly.mooo.com**
 - Docker is already running on the ec2 server(ubuntu)
 
 ## Development Setup
 
-- **PHP Files:** All PHP files are located in the `./app/` directory.
+- **PHP Files:** All PHP files for the webapp are located in the `./app/` directory.
 - **SFTP Configuration:** SFTP is configured for development and deployment purposes. You can access it using the `.vscode` settings.
+- **Docker:** Docker is configured with nginx, php, mysql and certbot (ssl). 
 
 ## Getting Started
 
