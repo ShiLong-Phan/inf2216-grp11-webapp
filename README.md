@@ -7,7 +7,7 @@ Welcome to the ICT2216 SSD web application repository.
 This server is hosted on **Docker** within an **EC2 instance**, with the following IP address:
 - **http://3.1.6.46**
 - **https://crumbly.mooo.com**
-- Docker is already running on the ec2 server(ubuntu)
+- Docker is already running on the ec2 server
 
 ## Development Setup
 
