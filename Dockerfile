@@ -1,6 +1,13 @@
-FROM php:8.2-apache
+FROM php:8.2-fpm
 
-RUN apt-get update
+RUN apt-get update && apt-get install -y \
+    libzip-dev \
+    && docker-php-ext-install mysqli pdo pdo_mysql zip
+
+# Configure PHP
+RUN echo "upload_max_filesize = 100M" > /usr/local/etc/php/conf.d/uploads.ini
+RUN echo "post_max_size = 100M" >> /usr/local/etc/php/conf.d/uploads.ini
+
 RUN apt-get install -y nano
 RUN docker-php-ext-install mysqli
 
