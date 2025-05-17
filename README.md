@@ -19,4 +19,4 @@ This server is hosted on **Docker** within an **EC2 instance**, with the followi
 
 1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/ShiLong-Phan/inf2212-grp11-webapp.git
+   git clone https://github.com/ShiLong-Phan/inf2216-grp11-webapp.git
