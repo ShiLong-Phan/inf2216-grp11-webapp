@@ -8,14 +8,14 @@ if (!isset($conn) || !$conn) {
 }
 
 // Check if user is logged in
-if (!isset($_SESSION['userid'])) {
+if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
 
 // Initialize variables
 $active_tab = isset($_GET['status']) ? $_GET['status'] : 'all';
-$userid = $_SESSION['userid'];
+$user_id = $_SESSION['user_id'];
 $orders = [];
 
 // Define status types
@@ -33,14 +33,14 @@ if ($active_tab !== 'all') {
     $status_condition = "AND o.status = ?";
 }
 
-$sql = "SELECT o.order_id, o.order_date, o.total_amount, o.status, 
+$sql = "SELECT o.order_id, o.order_date, o.order_total, o.order_status, 
                COUNT(oi.item_id) as item_count,
                (SELECT image_url FROM products p WHERE p.product_id = 
                   (SELECT product_id FROM order_items WHERE order_id = o.order_id LIMIT 1)
                ) as thumbnail
         FROM orders o 
         LEFT JOIN order_items oi ON o.order_id = oi.order_id
-        WHERE o.user_id = ? $status_condition
+        WHERE o.order_user_id = ? $status_condition
         GROUP BY o.order_id
         ORDER BY o.order_date DESC";
 
@@ -48,10 +48,10 @@ try {
     $stmt = $conn->prepare($sql);
     
     if ($active_tab === 'all') {
-        $stmt->bind_param("i", $userid);
+        $stmt->bind_param("i", $user_id);
     } else {
         $status = $active_tab;
-        $stmt->bind_param("is", $userid, $status);
+        $stmt->bind_param("is", $user_id, $status);
     }
     
     $stmt->execute();
