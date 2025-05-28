@@ -1,5 +1,8 @@
+<?php include 'utils/session.php'; ?>
+
 <!DOCTYPE html>
 <html lang="en">
+
 
 <?php include 'utils/header.php'; ?>
 <?php include 'utils/navbar.php'; ?>

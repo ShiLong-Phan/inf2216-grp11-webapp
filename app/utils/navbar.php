@@ -1,3 +1,29 @@
+<?php
+// Initialize cart total
+$cartTotal = 0;
+
+// If user is logged in, fetch their cart total
+if (isset($_SESSION['user_id'])) {
+    include_once "dbconnect.php"; // Make sure this path is correct
+
+    if ($conn) {
+        // Prepare and execute query to get cart items for the logged-in user
+        $userId = $_SESSION['user_id'];
+        $stmt = $conn->prepare("SELECT cart_quantity, cart_prod_price FROM ssdgroup11db.cart WHERE cart_user_id = ?");
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        // Calculate total
+        while ($row = $result->fetch_assoc()) {
+            $cartTotal += $row['cart_quantity'] * $row['cart_prod_price'];
+        }
+
+        $stmt->close();
+    }
+}
+?>
+
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
     <defs>
         <symbol xmlns="http://www.w3.org/2000/svg" id="link" viewBox="0 0 24 24">
@@ -58,54 +84,13 @@
         </symbol>
     </defs>
 </svg>
-
-<!-- <div class="preloader-wrapper">
+<!-- 
+<div class="preloader-wrapper">
     <div class="preloader">
     </div>
   </div> -->
 
-<div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasCart" aria-labelledby="My Cart">
-    <div class="offcanvas-header justify-content-center">
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body">
-        <div class="order-md-last">
-            <h4 class="d-flex justify-content-between align-items-center mb-3">
-                <span class="text-primary">Your cart</span>
-                <span class="badge bg-primary rounded-pill">3</span>
-            </h4>
-            <ul class="list-group mb-3">
-                <li class="list-group-item d-flex justify-content-between lh-sm">
-                    <div>
-                        <h6 class="my-0">Growers cider</h6>
-                        <small class="text-body-secondary">Brief description</small>
-                    </div>
-                    <span class="text-body-secondary">$12</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between lh-sm">
-                    <div>
-                        <h6 class="my-0">Fresh grapes</h6>
-                        <small class="text-body-secondary">Brief description</small>
-                    </div>
-                    <span class="text-body-secondary">$8</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between lh-sm">
-                    <div>
-                        <h6 class="my-0">Heinz tomato ketchup</h6>
-                        <small class="text-body-secondary">Brief description</small>
-                    </div>
-                    <span class="text-body-secondary">$5</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Total (USD)</span>
-                    <strong>$20</strong>
-                </li>
-            </ul>
-
-            <button class="w-100 btn btn-primary btn-lg" type="submit">Continue to checkout</button>
-        </div>
-    </div>
-</div>
+<?php include 'cart.php'; ?>
 
 <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasSearch" aria-labelledby="Search">
     <div class="offcanvas-header justify-content-center">
@@ -203,13 +188,20 @@
                         </a>
                     </li>
                 </ul>
-
                 <div class="cart text-end d-none d-lg-block dropdown">
-                    <button class="border-0 bg-transparent d-flex flex-column gap-2 lh-1" type="button"
-                        data-bs-toggle="offcanvas" data-bs-target="#offcanvasCart" aria-controls="offcanvasCart">
-                        <span class="fs-6 text-muted dropdown-toggle">Your Cart</span>
-                        <span class="cart-total fs-5 fw-bold">$1290.00</span>
-                    </button>
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <button class="border-0 bg-transparent d-flex flex-column gap-2 lh-1" type="button"
+                            data-bs-toggle="offcanvas" data-bs-target="#offcanvasCart" aria-controls="offcanvasCart">
+                            <span class="fs-6 text-muted dropdown-toggle">Your Cart</span>
+                            <span class="cart-total fs-5 fw-bold">$<?php echo number_format($cartTotal, 2); ?></span>
+                        </button>
+                    <?php else: ?>
+                        <a href="login.php"
+                            class="border-0 bg-transparent d-flex flex-column gap-2 lh-1 text-decoration-none">
+                            <span class="fs-6 text-muted">Your Cart</span>
+                            <span class="fs-5 fw-bold">Login to view</span>
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
 
