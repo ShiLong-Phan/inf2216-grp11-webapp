@@ -158,11 +158,19 @@ if (isset($_SESSION['user_id'])) {
 
                 <ul class="d-flex justify-content-end list-unstyled m-0">
                     <li>
-                        <a href="#" class="rounded-circle bg-light p-2 mx-1">
-                            <svg width="24" height="24" viewBox="0 0 24 24">
-                                <use xlink:href="#user"></use>
-                            </svg>
-                        </a>
+                        <?php if (isset($_SESSION['user_id'])): ?>
+                            <a href="profile.php" class="rounded-circle bg-light p-2 mx-1">
+                                <svg width="24" height="24" viewBox="0 0 24 24">
+                                    <use xlink:href="#user"></use>
+                                </svg>
+                            </a>
+                        <?php else: ?>
+                            <a href="login.php" class="rounded-circle bg-light p-2 mx-1">
+                                <svg width="24" height="24" viewBox="0 0 24 24">
+                                    <use xlink:href="#user"></use>
+                                </svg>
+                            </a>
+                        <?php endif; ?>
                     </li>
                     <li>
                         <a href="#" class="rounded-circle bg-light p-2 mx-1">
