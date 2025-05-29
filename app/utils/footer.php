@@ -1,7 +1,7 @@
 <!-- Footer divider -->
 <div class="footer-divider">
   <div class="container-fluid">
-    <hr class="footer-separator" style="height: 5px; background-color: #dee2e6; border: none; margin-bottom: 0;">
+    <hr class="footer-separator" style="height: 3px; background-color: #dee2e6; border: none; margin-bottom: 0;">
   </div>
 </div>
 
