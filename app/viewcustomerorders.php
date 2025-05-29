@@ -164,9 +164,9 @@ try {
     </div>
 
     <main>
-        <div class="container py-4">
+        <div class="container-fluid px-0">
             <div class="row justify-content-center">
-                <div class="col-md-10 col-lg-10">
+                <div class="col-md-12 col-lg-12 col-xl-10">
                     <div class="row">
                         <!-- Left side: Profile header with navigation buttons -->
                         <div class="col-md-4 mb-4 mb-md-0">
@@ -298,49 +298,6 @@ try {
                                                 </div>
                                             <?php endforeach; ?>
                                         <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- You might also like section -->
-                            <div class="card border-0 shadow-lg rounded-4 overflow-hidden mt-4" style="box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;">
-                                <div class="card-header bg-white p-4 border-0">
-                                    <div class="d-flex align-items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-heart text-primary me-2" viewBox="0 0 16 16">
-                                            <path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15" />
-                                        </svg>
-                                        <h4 class="mb-0">You might also like</h4>
-                                    </div>
-                                </div>
-                                <div class="card-body p-4">
-                                    <div class="row row-cols-1 row-cols-md-2 g-4">
-                                        <!-- Featured Product Item 1 -->
-                                        <div class="col">
-                                            <div class="card h-100 border-0 shadow-sm">
-                                                <img src="images/product-placeholder.png" class="card-img-top" alt="Chocolate Cake">
-                                                <div class="card-body">
-                                                    <h5 class="card-title">Chocolate Fudge Cake</h5>
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <span class="fw-bold text-primary">$24.99</span>
-                                                        <button class="btn btn-sm btn-outline-primary">Add to Cart</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Featured Product Item 2 -->
-                                        <div class="col">
-                                            <div class="card h-100 border-0 shadow-sm">
-                                                <img src="images/product-placeholder.png" class="card-img-top" alt="Strawberry Cheesecake">
-                                                <div class="card-body">
-                                                    <h5 class="card-title">Strawberry Cheesecake</h5>
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <span class="fw-bold text-primary">$22.99</span>
-                                                        <button class="btn btn-sm btn-outline-primary">Add to Cart</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>

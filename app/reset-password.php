@@ -117,9 +117,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tokenValid) {
     </div>
 
     <main>
-            <div class="container">
+            <div class="container-justify">
                 <div class="row justify-content-center">
-                    <div class="col-md-6 col-lg-5">
+                    <div class="col-md-7 col-lg-6">
                         <div class="card border-0 shadow-lg rounded-4 overflow-hidden" style="box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;">
                             <div class="card-body p-4 p-md-5">
                                 <div class="text-center mb-4">
