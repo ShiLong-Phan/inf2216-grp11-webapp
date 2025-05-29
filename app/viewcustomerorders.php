@@ -71,8 +71,6 @@ try {
 
 <head>
     <?php include 'utils/header.php'; ?>
-    <?php include 'utils/navbar.php'; ?>
-
     <style>
         .order-card {
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -111,7 +109,7 @@ try {
             color: #495057;
             border: none;
             border-bottom: 3px solid transparent;
-            padding: 1rem 1.5rem;
+            padding: 0.75rem 1.25rem;
             font-weight: 600;
         }
 
@@ -130,12 +128,6 @@ try {
             text-align: center;
         }
 
-        .empty-orders i {
-            font-size: 5rem;
-            color: #e0e0e0;
-            margin-bottom: 1rem;
-        }
-
         .order-thumbnail {
             width: 80px;
             height: 80px;
@@ -151,6 +143,8 @@ try {
 </head>
 
 <body>
+    <?php include 'utils/navbar.php'; ?>
+
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
         <defs>
             <symbol xmlns="http://www.w3.org/2000/svg" id="user" viewBox="0 0 24 24">
@@ -169,154 +163,192 @@ try {
         <div class="preloader"></div>
     </div>
 
-    <?php include 'utils/header.php'; ?>
-
     <main>
-        <div class="container">
-            <div class="row">
-                <div class="col-12">
-                    <h1 class="display-6 mb-4">My Orders</h1>
-
-                    <!-- Order Status Tabs -->
-                    <ul class="nav nav-tabs mb-4" id="orderTabs" role="tablist">
-                        <?php foreach ($status_types as $status_key => $status_label): ?>
-                            <li class="nav-item" role="presentation">
-                                <a class="nav-link <?php echo ($active_tab === $status_key) ? 'active' : ''; ?>"
-                                    href="?status=<?php echo $status_key; ?>"
-                                    role="tab">
-                                    <?php echo $status_label; ?>
-                                </a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-
-                    <!-- Orders List -->
-                    <div class="tab-content">
-                        <div class="tab-pane fade show active">
-                            <?php if (empty($orders)): ?>
-                                <div class="empty-orders">
-                                    <i class="bi bi-basket"></i>
-                                    <h3>No orders found</h3>
-                                    <p class="text-muted">You don't have any <?php echo strtolower($status_types[$active_tab]); ?> yet.</p>
-                                    <a href="index.php" class="btn btn-primary mt-3">Start Shopping</a>
-                                </div>
-                            <?php else: ?>
-                                <?php foreach ($orders as $order): ?>
-                                    <div class="card order-card mb-4 border-0 shadow-sm">
-                                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <span class="text-muted">Order #<?php echo $order['order_id']; ?></span>
-                                                <span class="order-date ms-3"><?php echo date('M d, Y', strtotime($order['order_date'])); ?></span>
-                                            </div>
-                                            <span class="badge status-<?php echo $order['status']; ?> text-white">
-                                                <?php echo ucfirst(str_replace('_', ' ', $order['status'])); ?>
-                                            </span>
+        <div class="container py-4">
+            <div class="row justify-content-center">
+                <div class="col-md-10 col-lg-10">
+                    <div class="row">
+                        <!-- Left side: Profile header with navigation buttons -->
+                        <div class="col-md-4 mb-4 mb-md-0">
+                            <div class="card border-0 shadow-lg rounded-4 overflow-hidden bg-primary text-white" style="box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-white text-primary rounded-circle p-2 me-3" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1));">
+                                            <svg width="40" height="40">
+                                                <use xlink:href="#user"></use>
+                                            </svg>
                                         </div>
-                                        <div class="card-body">
-                                            <div class="row align-items-center">
-                                                <div class="col-md-2 col-sm-3 mb-3 mb-md-0">
-                                                    <img src="<?php echo !empty($order['thumbnail']) ? $order['thumbnail'] : 'images/thumb-cake-default.png'; ?>"
-                                                        alt="Order thumbnail"
-                                                        class="order-thumbnail">
-                                                </div>
-                                                <div class="col-md-7 col-sm-9">
-                                                    <h5 class="card-title"><?php echo $order['item_count']; ?> <?php echo $order['item_count'] > 1 ? 'items' : 'item'; ?></h5>
-                                                    <p class="card-text order-items text-muted">
-                                                        Delicious pastries and cakes
-                                                    </p>
-                                                </div>
-                                                <div class="col-md-3 mt-3 mt-md-0 text-md-end">
-                                                    <p class="mb-2">Total: <span class="fw-bold"><?php echo '$' . number_format($order['total_amount'], 2); ?></span></p>
-                                                    <a href="order_details.php?id=<?php echo $order['order_id']; ?>" class="btn btn-sm btn-outline-primary">View Details</a>
+                                        <div class="text-start">
+                                            <h5 class="fw-bold mb-0"><?php echo htmlspecialchars($_SESSION['user_firstname']); ?></h5>
+                                            <p class="text-secondary-50 small mb-0"><?php echo htmlspecialchars($_SESSION['user_email']); ?></p>
+                                        </div>
+                                    </div>
 
-                                                    <?php if ($order['status'] === 'to_receive'): ?>
-                                                        <button class="btn btn-sm btn-success ms-2">Received</button>
-                                                    <?php endif; ?>
+                                    <!-- Navigation buttons in horizontal layout -->
+                                    <div class="d-grid gap-2 mt-2">
+                                        <a href="profile.php" class="btn btn-outline-light py-2 shadow-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-gear me-2" viewBox="0 0 16 16">
+                                                <path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m.256 7a4.5 4.5 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.711 10 8 10q.39 0 .74.025c.226-.341.496-.65.804-.918Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1z" />
+                                                <path d="M11.886 9.46c.18-.613 1.048-.613 1.229 0l.043.148a.64.64 0 0 0 .921.382l.136-.074c.561-.306 1.175.308.87.869l-.075.136a.64.64 0 0 0 .382.92l.149.045c.612.18.612 1.048 0 1.229l-.15.043a.64.64 0 0 0-.38.921l.074.136c.305.561-.309 1.175-.87.87l-.136-.075a.64.64 0 0 0-.92.382l-.045.149c-.18.612-1.048.612-1.229 0l-.043-.15a.64.64 0 0 0-.921-.38l-.136.074c-.561.305-1.175-.309-.87-.87l.075-.136a.64.64 0 0 0-.382-.92l-.148-.045c-.613-.18-.613-1.048 0-1.229l.148-.043a.64.64 0 0 0 .382-.921l-.074-.136c-.306-.561.308-1.175.869-.87l.136.075a.64.64 0 0 0 .92-.382zM14 12.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0z" />
+                                            </svg>
+                                            Edit Profile
+                                        </a>
+                                        <a href="viewcustomerorders.php" class="btn btn-light py-2 shadow-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-seam me-2" viewBox="0 0 16 16">
+                                                <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5l2.404.961L10.404 2zm3.564 1.426L5.596 5 8 5.961 14.154 3.5zm3.25 1.7-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464z" />
+                                            </svg>
+                                            My Orders
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
 
-                                                    <?php if ($order['status'] === 'to_ship'): ?>
-                                                        <button class="btn btn-sm btn-outline-danger ms-2">Cancel</button>
-                                                    <?php endif; ?>
+                            <!-- Quick Stats Card -->
+                            <div class="card border-0 shadow mt-3 rounded-4">
+                                <div class="card-body">
+                                    <h6 class="card-subtitle mb-2 text-muted">Order Summary</h6>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>Total Orders</div>
+                                        <span class="badge bg-primary rounded-pill"><?php echo count($orders); ?></span>
+                                    </div>
+                                    <?php if (!empty($orders)): ?>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>Latest Order</div>
+                                            <small class="text-muted"><?php echo date('M d, Y', strtotime($orders[0]['order_date'])); ?></small>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right side: Orders content -->
+                        <div class="col-md-8">
+                            <div class="card border-0 shadow-lg rounded-4 overflow-hidden" style="box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;">
+                                <div class="card-header bg-white p-4 border-0">
+                                    <div class="d-flex align-items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-box-seam text-primary me-2" viewBox="0 0 16 16">
+                                            <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5l2.404.961L10.404 2zm3.564 1.426L5.596 5 8 5.961 14.154 3.5zm3.25 1.7-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464z" />
+                                        </svg>
+                                        <h4 class="mb-0">My Orders</h4>
+                                    </div>
+                                </div>
+                                <div class="card-body p-4">
+                                    <!-- Tab navigation for order statuses -->
+                                    <ul class="nav nav-tabs mb-4">
+                                        <?php foreach ($status_types as $status_key => $status_label): ?>
+                                            <li class="nav-item">
+                                                <a class="nav-link <?php echo ($active_tab === $status_key) ? 'active' : ''; ?>"
+                                                    href="viewcustomerorders.php?status=<?php echo $status_key; ?>">
+                                                    <?php echo $status_label; ?>
+                                                </a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+
+                                    <!-- Orders list -->
+                                    <div class="orders-list">
+                                        <?php if (empty($orders)): ?>
+                                            <div class="text-center py-5">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-bag text-muted mb-3" viewBox="0 0 16 16">
+                                                    <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z" />
+                                                </svg>
+                                                <h5 class="text-muted">No orders found</h5>
+                                                <p class="text-muted">You haven't placed any orders in this category yet.</p>
+                                                <a href="shop.php" class="btn btn-primary mt-2">Continue Shopping</a>
+                                            </div>
+                                        <?php else: ?>
+                                            <?php foreach ($orders as $order): ?>
+                                                <div class="card order-card mb-3 border-0 shadow-sm">
+                                                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <span class="text-muted">Order #<?php echo $order['order_id']; ?></span>
+                                                            <span class="order-date ms-3"><?php echo date('M d, Y', strtotime($order['order_date'])); ?></span>
+                                                        </div>
+                                                        <span class="badge status-<?php echo $order['order_status']; ?> text-white">
+                                                            <?php echo ucfirst(str_replace('_', ' ', $order['order_status'])); ?>
+                                                        </span>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="row align-items-center">
+                                                            <div class="col-md-2 col-sm-3 mb-3 mb-md-0">
+                                                                <img src="<?php echo !empty($order['thumbnail']) ? $order['thumbnail'] : 'images/product-placeholder.png'; ?>"
+                                                                    alt="Order thumbnail"
+                                                                    class="order-thumbnail">
+                                                            </div>
+                                                            <div class="col-md-7 col-sm-9">
+                                                                <h5 class="card-title"><?php echo $order['item_count']; ?> <?php echo $order['item_count'] > 1 ? 'items' : 'item'; ?></h5>
+                                                                <p class="card-text order-items text-muted">
+                                                                    Delicious pastries and cakes
+                                                                </p>
+                                                            </div>
+                                                            <div class="col-md-3 mt-3 mt-md-0 text-md-end">
+                                                                <p class="mb-2">Total: <span class="fw-bold"><?php echo '$' . number_format($order['order_total'], 2); ?></span></p>
+                                                                <a href="order_details.php?id=<?php echo $order['order_id']; ?>" class="btn btn-sm btn-outline-primary">View Details</a>
+
+                                                                <?php if ($order['order_status'] === 'to_receive'): ?>
+                                                                    <button class="btn btn-sm btn-success ms-2">Received</button>
+                                                                <?php endif; ?>
+
+                                                                <?php if ($order['order_status'] === 'to_ship'): ?>
+                                                                    <button class="btn btn-sm btn-outline-danger ms-2">Cancel</button>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- You might also like section -->
+                            <div class="card border-0 shadow-lg rounded-4 overflow-hidden mt-4" style="box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;">
+                                <div class="card-header bg-white p-4 border-0">
+                                    <div class="d-flex align-items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-heart text-primary me-2" viewBox="0 0 16 16">
+                                            <path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15" />
+                                        </svg>
+                                        <h4 class="mb-0">You might also like</h4>
+                                    </div>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="row row-cols-1 row-cols-md-2 g-4">
+                                        <!-- Featured Product Item 1 -->
+                                        <div class="col">
+                                            <div class="card h-100 border-0 shadow-sm">
+                                                <img src="images/product-placeholder.png" class="card-img-top" alt="Chocolate Cake">
+                                                <div class="card-body">
+                                                    <h5 class="card-title">Chocolate Fudge Cake</h5>
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span class="fw-bold text-primary">$24.99</span>
+                                                        <button class="btn btn-sm btn-outline-primary">Add to Cart</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Featured Product Item 2 -->
+                                        <div class="col">
+                                            <div class="card h-100 border-0 shadow-sm">
+                                                <img src="images/product-placeholder.png" class="card-img-top" alt="Strawberry Cheesecake">
+                                                <div class="card-body">
+                                                    <h5 class="card-title">Strawberry Cheesecake</h5>
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span class="fw-bold text-primary">$22.99</span>
+                                                        <button class="btn btn-sm btn-outline-primary">Add to Cart</button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        </section>
-
-        <!-- Featured Products Section -->
-        <section class="py-5 bg-light">
-            <div class="container">
-                <div class="row">
-                    <div class="col-12 text-center mb-4">
-                        <h2>You might also like</h2>
-                        <p class="text-muted">Discover our delicious treats</p>
-                    </div>
-                </div>
-
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-                    <!-- Featured Product Item 1 -->
-                    <div class="col">
-                        <div class="card h-100 border-0 shadow-sm">
-                            <img src="images\product-placeholder.png" class="card-img-top" alt="Chocolate Cake">
-                            <div class="card-body">
-                                <h5 class="card-title">Chocolate Fudge Cake</h5>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold text-primary">$24.99</span>
-                                    <button class="btn btn-sm btn-outline-primary">Add to Cart</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Featured Product Item 2 -->
-                    <div class="col">
-                        <div class="card h-100 border-0 shadow-sm">
-                            <img src="images\product-placeholder.png" class="card-img-top" alt="Strawberry Cheesecake">
-                            <div class="card-body">
-                                <h5 class="card-title">Strawberry Cheesecake</h5>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold text-primary">$22.99</span>
-                                    <button class="btn btn-sm btn-outline-primary">Add to Cart</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Featured Product Item 3 -->
-                    <div class="col">
-                        <div class="card h-100 border-0 shadow-sm">
-                            <img src="images\product-placeholder.png" class="card-img-top" alt="Blueberry Muffins">
-                            <div class="card-body">
-                                <h5 class="card-title">Blueberry Muffins (6pc)</h5>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold text-primary">$12.99</span>
-                                    <button class="btn btn-sm btn-outline-primary">Add to Cart</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Featured Product Item 4 -->
-                    <div class="col">
-                        <div class="card h-100 border-0 shadow-sm">
-                            <img src="images\product-placeholder.png" class="card-img-top" alt="Red Velvet Cupcakes">
-                            <div class="card-body">
-                                <h5 class="card-title">Red Velvet Cupcakes (4pc)</h5>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold text-primary">$16.99</span>
-                                    <button class="btn btn-sm btn-outline-primary">Add to Cart</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
     </main>
 
     <?php include 'utils/footer.php'; ?>

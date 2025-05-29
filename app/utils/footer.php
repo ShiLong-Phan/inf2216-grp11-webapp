@@ -1,7 +1,13 @@
+<!-- Footer divider -->
+<div class="footer-divider">
+  <div class="container-fluid">
+    <hr class="footer-separator" style="height: 5px; background-color: #dee2e6; border: none; margin-bottom: 0;">
+  </div>
+</div>
+
 <footer class="py-5">
   <div class="container-fluid">
     <div class="row">
-
       <div class="col-lg-3 col-md-6 col-sm-6">
         <div class="footer-menu">
           <img src="images/logo.png" style="height: 250px; width: 250px" alt="logo">
