@@ -1,0 +1,593 @@
+<?php
+session_start();
+
+// Check if database connection is missing
+if (!isset($conn) || !$conn) {
+    // Include database connection
+    require_once 'utils/dbconnect.php';
+}
+
+// Function to sanitize input data
+function sanitizeInput($data)
+{
+    $data = trim($data);
+    $data = stripslashes($data);
+    $data = htmlspecialchars($data);
+    return $data;
+}
+
+// Check if user is logged in and is admin
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 1) {
+    header("Location: login.php");
+    exit();
+}
+
+$success_message = '';
+$errors = [];
+
+// Handle Product Operations
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    
+    switch ($action) {
+        case 'add_product':
+            $prod_name = sanitizeInput($_POST['prod_name']);
+            $prod_description = sanitizeInput($_POST['prod_description']);
+            $prod_price = floatval($_POST['prod_price']);
+            $prod_category = sanitizeInput($_POST['prod_category']);
+            $prod_image = sanitizeInput($_POST['prod_image']);
+            
+            // Validate product data
+            if (empty($prod_name)) {
+                $errors[] = "Product name is required";
+            }
+            if (empty($prod_description)) {
+                $errors[] = "Product description is required";
+            }
+            if ($prod_price <= 0) {
+                $errors[] = "Product price must be greater than 0";
+            }
+            if (empty($prod_category)) {
+                $errors[] = "Product category is required";
+            }
+            
+            if (empty($errors)) {
+                $sql = "INSERT INTO products (prod_name, prod_description, prod_price, prod_category, prod_image, prod_date_added) VALUES (?, ?, ?, ?, ?, NOW())";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("ssdss", $prod_name, $prod_description, $prod_price, $prod_category, $prod_image);
+                
+                if ($stmt->execute()) {
+                    $success_message = "Product added successfully!";
+                } else {
+                    $errors[] = "Failed to add product: " . $conn->error;
+                }
+            }
+            break;
+            
+        case 'edit_product':
+            $prod_id = intval($_POST['prod_id']);
+            $prod_name = sanitizeInput($_POST['prod_name']);
+            $prod_description = sanitizeInput($_POST['prod_description']);
+            $prod_price = floatval($_POST['prod_price']);
+            $prod_category = sanitizeInput($_POST['prod_category']);
+            $prod_image = sanitizeInput($_POST['prod_image']);
+            
+            // Validate product data
+            if (empty($prod_name)) {
+                $errors[] = "Product name is required";
+            }
+            if (empty($prod_description)) {
+                $errors[] = "Product description is required";
+            }
+            if ($prod_price <= 0) {
+                $errors[] = "Product price must be greater than 0";
+            }
+            if (empty($prod_category)) {
+                $errors[] = "Product category is required";
+            }
+            
+            if (empty($errors)) {
+                $sql = "UPDATE products SET prod_name = ?, prod_description = ?, prod_price = ?, prod_category = ?, prod_image = ? WHERE prod_id = ?";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("ssdssi", $prod_name, $prod_description, $prod_price, $prod_category, $prod_image, $prod_id);
+                
+                if ($stmt->execute()) {
+                    $success_message = "Product updated successfully!";
+                } else {
+                    $errors[] = "Failed to update product: " . $conn->error;
+                }
+            }
+            break;
+
+        case 'delete_product':
+            $prod_id = intval($_POST['prod_id']);
+            
+            $sql = "DELETE FROM products WHERE prod_id = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("i", $prod_id);
+            if ($stmt->execute()) {
+                $success_message = "Product deleted successfully!";
+            } else {
+                $errors[] = "Failed to delete product: " . $conn->error;
+            }
+            break;
+            
+        case 'update_order_status':
+            $order_id = intval($_POST['order_id']);
+            $order_status = sanitizeInput($_POST['order_status']);
+            
+            $valid_statuses = ['processing', 'shipped', 'delivered', 'cancelled'];
+            if (!in_array($order_status, $valid_statuses)) {
+                $errors[] = "Invalid order status";
+            } else {
+                $sql = "UPDATE orders SET order_status = ? WHERE order_id = ?";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("si", $order_status, $order_id);
+                
+                if ($stmt->execute()) {
+                    $success_message = "Order status updated successfully!";
+                } else {
+                    $errors[] = "Failed to update order status: " . $conn->error;
+                }
+            }
+            break;
+    }
+}
+
+// Fetch all products
+$products_sql = "SELECT * FROM products ORDER BY prod_date_added DESC";
+$products_result = $conn->query($products_sql);
+
+// Fetch all orders with user information
+$orders_sql = "SELECT o.*, u.user_firstname, u.user_lastname, u.user_email 
+               FROM orders o 
+               JOIN users u ON o.order_user_id = u.user_id 
+               ORDER BY o.order_date DESC";
+$orders_result = $conn->query($orders_sql);
+
+// Get product categories for dropdown
+$categories_sql = "SELECT DISTINCT prod_category FROM products ORDER BY prod_category";
+$categories_result = $conn->query($categories_sql);
+$categories = [];
+while ($row = $categories_result->fetch_assoc()) {
+    $categories[] = $row['prod_category'];
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<?php include 'utils/header.php'; ?>
+
+<head>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <defs>
+            <symbol xmlns="http://www.w3.org/2000/svg" id="user" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M15.71 12.71a6 6 0 1 0-7.42 0a10 10 0 0 0-6.22 8.18a1 1 0 0 0 2 .22a8 8 0 0 1 15.9 0a1 1 0 0 0 1 .89h.11a1 1 0 0 0 .88-1.1a10 10 0 0 0-6.25-8.19ZM12 12a4 4 0 1 1 4-4a4 4 0 0 1-4 4Z" />
+            </symbol>
+            <symbol xmlns="http://www.w3.org/2000/svg" id="edit" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M19.045 7.401c.378-.378.586-.88.586-1.414s-.208-1.036-.586-1.414l-1.586-1.586c-.378-.378-.88-.586-1.414-.586s-1.036.208-1.413.585L4 13.585V18h4.413L19.045 7.401zm-3-3l1.587 1.585-1.59 1.584-1.586-1.585 1.589-1.584zM6 16v-1.585l7.04-7.018 1.586 1.586L7.587 16H6zm-2 4h16v2H4z" />
+            </symbol>
+        </defs>
+    </svg>
+
+    <div class="preloader-wrapper">
+        <div class="preloader"></div>
+    </div>
+
+    <?php include 'utils/navbar.php'; ?>
+
+    <main>
+        <div class="container-fluid px-0">
+            <div class="row justify-content-center">
+                <div class="col-md-12 col-lg-12 col-xl-10">
+                    <!-- Success and error messages -->
+                    <?php if (!empty($success_message)): ?>
+                        <div class="alert alert-success shadow-sm mb-4" id="successAlert">
+                            <div class="d-flex align-items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-check-circle-fill me-2" viewBox="0 0 16 16">
+                                    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
+                                </svg>
+                                <span><?php echo htmlspecialchars($success_message); ?></span>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($errors)): ?>
+                        <!-- Your existing error message code here -->
+                    <?php endif; ?>
+
+                    <div class="row">
+                        <!-- Left side: Admin navigation -->
+                        <div class="col-md-3 col-lg-3 mb-4">
+                            <div class="card border-0 shadow-lg rounded-4 overflow-hidden bg-primary text-white" style="box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-white text-primary rounded-circle p-2 me-3" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1));">
+                                            <svg width="40" height="40">
+                                                <use xlink:href="#user"></use>
+                                            </svg>
+                                        </div>
+                                        <div class="text-start">
+                                            <h5 class="fw-bold mb-0">Admin</h5>
+                                            <p class="text-white-50 small mb-0"><?php echo htmlspecialchars($_SESSION['user_email']); ?></p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Navigation buttons -->
+                                    <div class="d-grid gap-2 mt-2">
+                                        <button class="btn btn-light py-2 shadow-sm nav-btn active" onclick="showSection('products')" data-section="products">
+                                            <svg width="16" height="16" class="me-2">
+                                                <use xlink:href="#product"></use>
+                                            </svg>
+                                            Manage Products
+                                        </button>
+                                        <button class="btn btn-outline-light py-2 shadow-sm nav-btn" onclick="showSection('orders')" data-section="orders">
+                                            <svg width="16" height="16" class="me-2">
+                                                <use xlink:href="#orders"></use>
+                                            </svg>
+                                            View Orders
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-9 col-lg-9">
+                            <!-- Products Section -->
+                            <div id="products-section" class="content-section">
+                                <div class="card border-0 shadow-lg rounded-4 overflow-hidden" style="box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;">
+                                    <div class="card-header bg-white p-4 border-0">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div class="d-flex align-items-center">
+                                                <svg width="24" height="24" class="text-primary me-2">
+                                                    <use xlink:href="#product"></use>
+                                                </svg>
+                                                <h4 class="mb-0">Product Management</h4>
+                                            </div>
+                                            <!-- Add Product Button -->
+                                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg me-2" viewBox="0 0 16 16">
+                                                <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
+                                            </svg>
+                                            Add Product
+                                            </button>
+                                            <!-- Add Product Modal -->
+                                            <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
+                                            <div class="modal-dialog modal-lg">
+                                                <div class="modal-content">
+                                                <form method="POST" action="" enctype="multipart/form-data">
+                                                    <input type="hidden" name="action" value="add_product">
+                                                    <div class="modal-header">
+                                                    <h5 class="modal-title" id="addProductModalLabel">Add Product</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body row g-3">
+                                                    <div class="col-md-6">
+                                                        <label for="prod_name" class="form-label">Product Name</label>
+                                                        <input type="text" class="form-control" name="prod_name" id="prod_name" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label for="prod_price" class="form-label">Price ($)</label>
+                                                        <input type="number" step="0.01" class="form-control" name="prod_price" id="prod_price" required>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label for="prod_description" class="form-label">Description</label>
+                                                        <textarea class="form-control" name="prod_description" id="prod_description" rows="3" required></textarea>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label for="prod_category" class="form-label">Category</label>
+                                                        <input type="text" class="form-control" name="prod_category" id="prod_category" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label for="prod_image" class="form-label">Image URL</label>
+                                                        <input type="text" class="form-control" name="prod_image" id="prod_image" required>
+                                                    </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-success">Add Product</button>
+                                                    </div>
+                                                </form>
+                                                </div>
+                                            </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover mb-0">
+                                                <thead class="bg-light">
+                                                <tr>
+                                                    <th class="px-4 py-3">ID</th>
+                                                    <th class="px-4 py-3">Name</th>
+                                                    <th class="px-4 py-3">Category</th>
+                                                    <th class="px-4 py-3">Price</th>
+                                                    <th class="px-4 py-3">Date Added</th>
+                                                    <th class="px-4 py-3">Actions</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php if ($products_result && $products_result->num_rows > 0): ?>
+                                                        <?php while ($product = $products_result->fetch_assoc()): ?>
+                                                            <tr>
+                                                                <td class="px-4 py-3"><?php echo htmlspecialchars($product['prod_id']); ?></td>
+                                                                <td class="px-4 py-3">
+                                                                    <div class="d-flex align-items-center">
+                                                                        <?php if (!empty($product['prod_image'])): ?>
+                                                                            <img src="<?php echo htmlspecialchars($product['prod_image']); ?>" alt="Product" class="rounded me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                                                        <?php endif; ?>
+                                                                        <div>
+                                                                            <div class="fw-medium"><?php echo htmlspecialchars($product['prod_name']); ?></div>
+                                                                            <?php if (!empty($product['prod_description'])): ?>
+                                                                                <div class="text-muted small"><?php echo htmlspecialchars(substr($product['prod_description'], 0, 50)) . '...'; ?></div>
+                                                                            <?php endif; ?>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="px-4 py-3">
+                                                                    <span class="badge bg-secondary"><?php echo htmlspecialchars($product['prod_category']); ?></span>
+                                                                </td>
+                                                                <td class="px-4 py-3">
+                                                                    <span class="fw-medium">$<?php echo number_format($product['prod_price'], 2); ?></span>
+                                                                </td>
+                                                                <!-- stock, remove if dont need -->
+                                                                <!-- <td class="px-4 py-3">
+                                                                    <?php 
+                                                                    $stock = $product['prod_stock'];
+                                                                    $stockClass = $stock <= 10 ? 'text-danger' : ($stock <= 50 ? 'text-warning' : 'text-success');
+                                                                    ?>
+                                                                    <span class="<?php echo $stockClass; ?> fw-medium"><?php echo $stock; ?></span>
+                                                                </td> -->
+                                                                <td class="px-4 py-3 text-muted"><?php echo date('M j, Y', strtotime($product['prod_date_added'])); ?></td>
+                                                                <td class="px-4 py-3">
+                                                                <div class="d-flex align-items-center gap-2">
+                                                                     <!-- Edit Button -->
+                                                                    <button type="button"
+                                                                            class="btn btn-outline-primary d-flex align-items-center justify-content-center"
+                                                                            style="width: 36px; height: 36px; padding: 0;"
+                                                                            data-bs-toggle="modal"
+                                                                            data-bs-target="#editModal_<?php echo $product['prod_id']; ?>">
+                                                                    <i class="bi bi-pencil" style="font-size: 1rem;"></i>
+                                                                    </button>
+
+                                                                    <!-- Delete Button -->
+                                                                    <form method="POST"
+                                                                        onsubmit="return confirm('Are you sure you want to delete this product?');"
+                                                                        style="display: inline;">
+                                                                    <input type="hidden" name="action" value="delete_product">
+                                                                    <input type="hidden" name="prod_id" value="<?php echo $product['prod_id']; ?>">
+                                                                    <button type="submit"
+                                                                            class="btn btn-outline-danger d-flex align-items-center justify-content-center"
+                                                                            style="width: 36px; height: 36px; padding: 0;">
+                                                                        <i class="bi bi-trash" style="font-size: 1rem;"></i>
+                                                                    </button>
+                                                                    </form>
+                                                                </div>
+
+                                                                <!-- Edit Modal -->
+                                                                <div class="modal fade"
+                                                                    id="editModal_<?php echo $product['prod_id']; ?>"
+                                                                    tabindex="-1"
+                                                                    aria-labelledby="editModalLabel_<?php echo $product['prod_id']; ?>"
+                                                                    aria-hidden="true">
+                                                                    <div class="modal-dialog">
+                                                                        <form method="POST">
+                                                                            <input type="hidden" name="action" value="edit_product">
+                                                                            <input type="hidden" name="prod_id" value="<?php echo $product['prod_id']; ?>">
+                                                                            <div class="modal-content">
+                                                                                <div class="modal-header">
+                                                                                    <h5 class="modal-title" id="editModalLabel_<?php echo $product['prod_id']; ?>">Edit Product</h5>
+                                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                                </div>
+                                                                                <div class="modal-body">
+                                                                                    <div class="mb-2">
+                                                                                        <label class="form-label">Product Name</label>
+                                                                                        <input type="text" class="form-control" name="prod_name"
+                                                                                            value="<?php echo htmlspecialchars($product['prod_name']); ?>" required>
+                                                                                    </div>
+                                                                                    <div class="mb-2">
+                                                                                        <label class="form-label">Description</label>
+                                                                                        <textarea class="form-control" name="prod_description" required><?php echo htmlspecialchars($product['prod_description']); ?></textarea>
+                                                                                    </div>
+                                                                                    <div class="mb-2">
+                                                                                        <label class="form-label">Price</label>
+                                                                                        <input type="number" class="form-control" name="prod_price" step="0.01"
+                                                                                            value="<?php echo $product['prod_price']; ?>" required>
+                                                                                    </div>
+                                                                                    <div class="mb-2">
+                                                                                        <label class="form-label">Category</label>
+                                                                                        <input type="text" class="form-control" name="prod_category"
+                                                                                            value="<?php echo htmlspecialchars($product['prod_category']); ?>" required>
+                                                                                    </div>
+                                                                                    <div class="mb-2">
+                                                                                        <label class="form-label">Image URL</label>
+                                                                                        <input type="text" class="form-control" name="prod_image"
+                                                                                            value="<?php echo htmlspecialchars($product['prod_image']); ?>">
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="modal-footer">
+                                                                                    <button type="submit" class="btn btn-primary">Update Product</button>
+                                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </form>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        <?php endwhile; ?>
+                                                    <?php else: ?>
+                                                        <tr>
+                                                            <td colspan="7" class="text-center py-5 text-muted">
+                                                                <svg width="48" height="48" class="mb-3 opacity-50">
+                                                                    <use xlink:href="#product"></use>
+                                                                </svg>
+                                                                <div>No products found</div>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endif; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                             <!-- Orders Section -->
+                             <div id="orders-section" class="content-section" style="display: none;">
+                                <div class="card border-0 shadow-lg rounded-4 overflow-hidden" style="box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;">
+                                    <div class="card-header bg-white p-4 border-0">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div class="d-flex align-items-center">
+                                                <svg width="24" height="24" class="text-primary me-2">
+                                                    <use xlink:href="#orders"></use>
+                                                </svg>
+                                                <h4 class="mb-0">Order Management</h4>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <select class="form-select" id="orderStatusFilter">
+                                                    <option value="">All Status</option>
+                                                    <option value="pending">Pending</option>
+                                                    <option value="processing">Processing</option>
+                                                    <option value="shipped">Shipped</option>
+                                                    <option value="delivered">Delivered</option>
+                                                    <option value="cancelled">Cancelled</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover mb-0">
+                                                <thead class="bg-light">
+                                                    <tr>
+                                                        <th class="px-4 py-3">Order ID</th>
+                                                        <th class="px-4 py-3">Customer</th>
+                                                        <th class="px-4 py-3">Date</th>
+                                                        <th class="px-4 py-3">Total</th>
+                                                        <th class="px-4 py-3">Status</th>
+                                                        <th class="px-4 py-3">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php if ($orders_result && $orders_result->num_rows > 0): ?>
+                                                        <?php while ($order = $orders_result->fetch_assoc()): ?>
+                                                            <tr>
+                                                                <td class="px-4 py-3">
+                                                                    <span class="fw-medium">#<?php echo str_pad($order['order_id'], 6, '0', STR_PAD_LEFT); ?></span>
+                                                                </td>
+                                                                <td class="px-4 py-3">
+                                                                    <div>
+                                                                        <div class="fw-medium"><?php echo htmlspecialchars($order['user_firstname'] . ' ' . $order['user_lastname']); ?></div>
+                                                                        <div class="text-muted small"><?php echo htmlspecialchars($order['user_email']); ?></div>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="px-4 py-3 text-muted"><?php echo date('M j, Y g:i A', strtotime($order['order_date'])); ?></td>
+                                                                <td class="px-4 py-3">
+                                                                    <span class="fw-medium">$<?php echo number_format($order['order_total'], 2); ?></span>
+                                                                </td>
+                                                                <td class="px-4 py-3">
+                                                                    <?php
+                                                                    $status = $order['order_status'];
+                                                                    $statusClass = '';
+                                                                    switch(strtolower($status)) {
+                                                                        case 'pending':
+                                                                            $statusClass = 'bg-warning text-dark';
+                                                                            break;
+                                                                        case 'processing':
+                                                                            $statusClass = 'bg-info text-white';
+                                                                            break;
+                                                                        case 'shipped':
+                                                                            $statusClass = 'bg-primary text-white';
+                                                                            break;
+                                                                        case 'delivered':
+                                                                            $statusClass = 'bg-success text-white';
+                                                                            break;
+                                                                        case 'cancelled':
+                                                                            $statusClass = 'bg-danger text-white';
+                                                                            break;
+                                                                        default:
+                                                                            $statusClass = 'bg-secondary text-white';
+                                                                    }
+                                                                    ?>
+                                                                    <span class="badge <?php echo $statusClass; ?>"><?php echo ucfirst($status); ?></span>
+                                                                </td>
+                                                                <td class="px-4 py-3">
+                                                                    <div class="btn-group" role="group">
+                                                                        <button type="button" class="btn btn-sm btn-outline-primary" title="View Details">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
+                                                                                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                                                                                <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                                                                            </svg>
+                                                                        </button>
+                                                                        <button type="button" class="btn btn-sm btn-outline-success" title="Update Status">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                                                                                <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                                                                                <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+                                                                            </svg>
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endwhile; ?>
+                                                    <?php else: ?>
+                                                        <tr>
+                                                            <td colspan="6" class="text-center py-5 text-muted">
+                                                                <svg width="48" height="48" class="mb-3 opacity-50">
+                                                                    <use xlink:href="#orders"></use>
+                                                                </svg>
+                                                                <div>No orders found</div>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endif; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <?php include 'utils/footer.php'; ?>
+
+    <script>
+        function showSection(section) {
+        // Hide all sections
+        const sections = document.querySelectorAll('.content-section');
+        sections.forEach(sec => sec.style.display = 'none');
+
+        // Show the selected section
+        const target = document.getElementById(section + '-section');
+        if (target) {
+            target.style.display = 'block';
+        }
+
+        // Update active button styling
+        const buttons = document.querySelectorAll('.nav-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.querySelector(`button[data-section="${section}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
+    }
+    </script>
+
+    <script src="js/jquery-1.11.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
+    <script src="js/plugins.js"></script>
+    <script src="js/script.js"></script>
+</body>
+
+</html>
