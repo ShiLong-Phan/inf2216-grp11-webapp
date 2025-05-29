@@ -195,6 +195,11 @@ if (isset($_SESSION['user_id'])) {
                             </svg>
                         </a>
                     </li>
+                    <?php if (isset($_SESSION['user_id']) && isset($_SESSION['user_role']) && $_SESSION['user_role'] == 1): ?>
+                        <li class="nav-item ms-3">
+                            <a class="nav-link" href="/admin_dashboard.php">Admin</a>
+                        </li>
+                    <?php endif; ?>
                 </ul>
                 <div class="cart text-end d-none d-lg-block dropdown">
                     <?php if (isset($_SESSION['user_id'])): ?>
