@@ -339,7 +339,7 @@ $orders_result = $conn->query($orders_sql);
                                                                     </div>
                                                                 </td>
                                                                 <td class="px-4 py-3">
-                                                                    <span class="badge bg-secondary"><?php echo htmlspecialchars($product['prod_category']); ?></span>
+                                                                    <span class="badge bg-primary"><?php echo htmlspecialchars($product['prod_category']); ?></span>
                                                                 </td>
                                                                 <td class="px-4 py-3">
                                                                     <span class="fw-medium">$<?php echo number_format($product['prod_price'], 2); ?></span>
