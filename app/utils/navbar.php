@@ -9,7 +9,7 @@ if (isset($_SESSION['user_id'])) {
     if ($conn) {
         // Prepare and execute query to get cart items for the logged-in user
         $userId = $_SESSION['user_id'];
-        $stmt = $conn->prepare("SELECT cart_quantity, cart_prod_price FROM ssdgroup11db.cart WHERE cart_user_id = ?");
+        $stmt = $conn->prepare("SELECT cart_id, cart_quantity, cart_prod_price FROM ssdgroup11db.cart WHERE cart_user_id = ?");
         $stmt->bind_param("i", $userId);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -152,9 +152,6 @@ if (isset($_SESSION['user_id'])) {
 
             <div
                 class="col-sm-8 col-lg-4 d-flex justify-content-end gap-5 align-items-center mt-4 mt-sm-0 justify-content-center justify-content-sm-end">
-                <div class="support-box text-end d-none d-xl-block">
-                    <h5 class="mb-0">Contact Us</h5>
-                </div>
 
                 <ul class="d-flex justify-content-end list-unstyled m-0">
                     <li>

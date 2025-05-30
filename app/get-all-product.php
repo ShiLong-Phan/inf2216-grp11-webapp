@@ -2,6 +2,9 @@
 // Include your database connection file
 include "utils/dbconnect.php";
 
+// Define INCLUDED constant to prevent direct access to the product-card.php
+define('INCLUDED', true);
+
 // Add error reporting for debugging
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -86,61 +89,7 @@ if (empty($all_products)) {
     <div class="tab-pane fade show active" id="nav-all" role="tabpanel" aria-labelledby="nav-all-tab">
         <div class="product-grid row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
             <?php foreach ($all_products as $product): ?>
-                <div class="col">
-                    <div class="product-item">
-                        <?php if (rand(1, 3) == 1): // Randomly show discount badge for demo ?>
-                            <span class="badge bg-success position-absolute m-3">-<?php echo rand(10, 30); ?>%</span>
-                        <?php endif; ?>
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24">
-                                <use xlink:href="#heart"></use>
-                            </svg></a>
-                        <figure>
-                            <a href="product.php?id=<?php echo $product['prod_id']; ?>"
-                                title="<?php echo htmlspecialchars($product['prod_name']); ?>">
-                                <img src="<?php echo !empty($product['prod_image']) ? 'images/products/' . $product['prod_image'] : 'images/product-placeholder.png'; ?>"
-                                    class="tab-image" alt="<?php echo htmlspecialchars($product['prod_name']); ?>">
-                            </a>
-                        </figure>
-                        <h3><?php echo htmlspecialchars($product['prod_name']); ?></h3>
-                        <span class="qty">1 Unit</span>
-                        <span class="price">$<?php echo number_format($product['prod_price'], 2); ?></span>
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div class="input-group product-qty">
-                                <span class="input-group-btn">
-                                    <button type="button" class="quantity-left-minus btn btn-danger btn-number"
-                                        data-type="minus">
-                                        <svg width="16" height="16">
-                                            <use xlink:href="#minus"></use>
-                                        </svg>
-                                    </button>
-                                </span>
-                                <input type="text" id="quantity_<?php echo $product['prod_id']; ?>" name="quantity"
-                                    class="form-control input-number" value="1">
-                                <span class="input-group-btn">
-                                    <button type="button" class="quantity-right-plus btn btn-success btn-number"
-                                        data-type="plus">
-                                        <svg width="16" height="16">
-                                            <use xlink:href="#plus"></use>
-                                        </svg>
-                                    </button>
-                                </span>
-                            </div>
-                            <?php if (isset($_SESSION['user_id'])): ?>
-                                <a href="#" class="nav-link add-to-cart" data-product-id="<?php echo $product['prod_id']; ?>">
-                                    Add to Cart <svg width="16" height="16">
-                                        <use xlink:href="#cart"></use>
-                                    </svg>
-                                </a>
-                            <?php else: ?>
-                                <a href="login.php" class="nav-link">
-                                    Login to Buy <svg width="16" height="16">
-                                        <use xlink:href="#user"></use>
-                                    </svg>
-                                </a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
+                <?php include "product-card.php"; ?>
             <?php endforeach; ?>
         </div>
     </div>
@@ -156,51 +105,7 @@ if (empty($all_products)) {
                     </div>
                 <?php else: ?>
                     <?php foreach ($category_products as $product): ?>
-                        <div class="col">
-                            <div class="product-item">
-                                <?php if (rand(1, 3) == 1): ?>
-                                    <span class="badge bg-success position-absolute m-3">-<?php echo rand(10, 30); ?>%</span>
-                                <?php endif; ?>
-                                <a href="#" class="btn-wishlist"><svg width="24" height="24">
-                                        <use xlink:href="#heart"></use>
-                                    </svg></a>
-                                <figure>
-                                    <a href="product.php?id=<?php echo $product['prod_id']; ?>"
-                                        title="<?php echo htmlspecialchars($product['prod_name']); ?>">
-                                        <img src="<?php echo !empty($product['prod_image']) ? 'images/products/' . $product['prod_image'] : 'images/product-placeholder.png'; ?>"
-                                            class="tab-image" alt="<?php echo htmlspecialchars($product['prod_name']); ?>">
-                                    </a>
-                                </figure>
-                                <h3><?php echo htmlspecialchars($product['prod_name']); ?></h3>
-                                <span class="qty">1 Unit</span>
-                                <span class="price">$<?php echo number_format($product['prod_price'], 2); ?></span>
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div class="input-group product-qty">
-                                        <span class="input-group-btn">
-                                            <button type="button" class="quantity-left-minus btn btn-danger btn-number"
-                                                data-type="minus">
-                                                <svg width="16" height="16">
-                                                    <use xlink:href="#minus"></use>
-                                                </svg>
-                                            </button>
-                                        </span>
-                                        <input type="text"
-                                            id="quantity_<?php echo $product['prod_id']; ?>_<?php echo strtolower($category_name); ?>"
-                                            name="quantity" class="form-control input-number" value="1">
-                                        <span class="input-group-btn">
-                                            <button type="button" class="quantity-right-plus btn btn-success btn-number"
-                                                data-type="plus">
-                                                <svg width="16" height="16">
-                                                    <use xlink:href="#plus"></use>
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </div>
-                                    <a href="#" class="nav-link add-to-cart"
-                                        data-product-id="<?php echo $product['prod_id']; ?>">Add to Cart</a>
-                                </div>
-                            </div>
-                        </div>
+                        <?php include "product-card.php"; ?>
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
@@ -235,7 +140,7 @@ if (empty($all_products)) {
             });
         });
 
-        // Add to cart functionality
+        // Add to cart functionality using AJAX
         const addToCartButtons = document.querySelectorAll('.add-to-cart');
         addToCartButtons.forEach(button => {
             button.addEventListener('click', function (e) {
@@ -244,11 +149,60 @@ if (empty($all_products)) {
                 const quantityInput = this.closest('.product-item').querySelector('input[name="quantity"]');
                 const quantity = quantityInput ? quantityInput.value : 1;
 
-                // Here you would typically add AJAX code to add the item to cart
-                console.log(`Adding product ID ${productId} with quantity ${quantity} to cart`);
-                alert(`Product added to cart! (ID: ${productId}, Quantity: ${quantity})`);
+                // Create form data for the AJAX request
+                const formData = new FormData();
+                formData.append('product_id', productId);
+                formData.append('quantity', quantity);
+
+                // Send AJAX request to add-to-cart.php
+                fetch('add-to-cart.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show success message
+                            showNotification('success', data.message);
+
+                            // Update cart total if needed
+                            updateCartDisplay();
+                        } else {
+                            // Show error message
+                            showNotification('error', data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showNotification('error', 'An error occurred while adding to cart');
+                    });
             });
         });
+
+        // Function to show notification
+        function showNotification(type, message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} notification`;
+            notification.textContent = message;
+
+            // Add to the document
+            document.body.appendChild(notification);
+
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Function to update cart display (total, count, etc.)
+        function updateCartDisplay() {
+            // You can add AJAX call here to get updated cart data if needed
+            // This example just reloads the page after a short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
     });
 
     // Log all products to console for debugging
@@ -261,4 +215,20 @@ if (empty($all_products)) {
     <?php foreach ($categories as $category => $products): ?>
         console.log('Category "<?php echo $category; ?>": <?php echo count($products); ?> products');
     <?php endforeach; ?>
+
 </script>
+
+<style>
+    /* Notification styles */
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 250px;
+        padding: 15px;
+        border-radius: 4px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        opacity: 0.9;
+    }
+</style>
