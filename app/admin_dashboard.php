@@ -146,12 +146,12 @@ $orders_sql = "SELECT o.*, u.user_firstname, u.user_lastname, u.user_email
 $orders_result = $conn->query($orders_sql);
 
 // Get product categories for dropdown
-$categories_sql = "SELECT DISTINCT prod_category FROM products ORDER BY prod_category";
-$categories_result = $conn->query($categories_sql);
-$categories = [];
-while ($row = $categories_result->fetch_assoc()) {
-    $categories[] = $row['prod_category'];
-}
+// $categories_sql = "SELECT DISTINCT prod_category FROM products ORDER BY prod_category";
+// $categories_result = $conn->query($categories_sql);
+// $categories = [];
+// while ($row = $categories_result->fetch_assoc()) {
+//     $categories[] = $row['prod_category'];
+// }
 ?>
 
 <!DOCTYPE html>
@@ -281,7 +281,15 @@ while ($row = $categories_result->fetch_assoc()) {
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label for="prod_category" class="form-label">Category</label>
-                                                        <input type="text" class="form-control" name="prod_category" id="prod_category" required>
+                                                        <select class="form-control" name="prod_category" id="prod_category" required>
+                                                            <option value="">Select Category</option>
+                                                            <option value="Cakes">Cakes</option>
+                                                            <option value="Tarts">Tarts</option>
+                                                            <option value="Cookies">Cookies</option>
+                                                            <option value="Cupcakes">Cupcakes</option>
+                                                            <option value="Muffins">Muffins</option>
+                                                            <option value="Puffs">Puffs</option>
+                                                        </select>
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label for="prod_image" class="form-label">Image URL</label>
@@ -331,7 +339,7 @@ while ($row = $categories_result->fetch_assoc()) {
                                                                     </div>
                                                                 </td>
                                                                 <td class="px-4 py-3">
-                                                                    <span class="badge bg-secondary"><?php echo htmlspecialchars($product['prod_category']); ?></span>
+                                                                    <span class="badge bg-primary"><?php echo htmlspecialchars($product['prod_category']); ?></span>
                                                                 </td>
                                                                 <td class="px-4 py-3">
                                                                     <span class="fw-medium">$<?php echo number_format($product['prod_price'], 2); ?></span>
@@ -402,8 +410,15 @@ while ($row = $categories_result->fetch_assoc()) {
                                                                                     </div>
                                                                                     <div class="mb-2">
                                                                                         <label class="form-label">Category</label>
-                                                                                        <input type="text" class="form-control" name="prod_category"
-                                                                                            value="<?php echo htmlspecialchars($product['prod_category']); ?>" required>
+                                                                                        <select class="form-control" name="prod_category" required>
+                                                                                            <option value="">Select Category</option>
+                                                                                            <option value="Cakes" <?php echo ($product['prod_category'] == 'Cakes') ? 'selected' : ''; ?>>Cakes</option>
+                                                                                            <option value="Tarts" <?php echo ($product['prod_category'] == 'Tarts') ? 'selected' : ''; ?>>Tarts</option>
+                                                                                            <option value="Cookies" <?php echo ($product['prod_category'] == 'Cookies') ? 'selected' : ''; ?>>Cookies</option>
+                                                                                            <option value="Cupcakes" <?php echo ($product['prod_category'] == 'Cupcakes') ? 'selected' : ''; ?>>Cupcakes</option>
+                                                                                            <option value="Muffins" <?php echo ($product['prod_category'] == 'Muffins') ? 'selected' : ''; ?>>Muffins</option>
+                                                                                            <option value="Puffs" <?php echo ($product['prod_category'] == 'Puffs') ? 'selected' : ''; ?>>Puffs</option>
+                                                                                        </select>
                                                                                     </div>
                                                                                     <div class="mb-2">
                                                                                         <label class="form-label">Image URL</label>
