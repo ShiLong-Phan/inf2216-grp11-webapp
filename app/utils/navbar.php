@@ -200,6 +200,15 @@ if (isset($_SESSION['user_id'])) {
                             <a class="nav-link" href="/admin_dashboard.php">Admin</a>
                         </li>
                     <?php endif; ?>
+
+                    <!-- logout -->
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <li class="logout-btn ms-3">
+                            <a href="../logout.php" class="rounded-circle bg-light p-2 mx-1" data-bs-toggle="offcanvas">
+                                <i class="fa fa-sign-out" aria-hidden="true"></i>
+                            </a>
+                        </li>
+                    <?php endif; ?>
                 </ul>
                 <div class="cart text-end d-none d-lg-block dropdown">
                     <?php if (isset($_SESSION['user_id'])): ?>
@@ -216,6 +225,7 @@ if (isset($_SESSION['user_id'])) {
                         </a>
                     <?php endif; ?>
                 </div>
+
             </div>
 
         </div>

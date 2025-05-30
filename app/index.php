@@ -2,7 +2,6 @@
 
 <!DOCTYPE html>
 
-
 <?php include 'utils/header.php'; ?>
 <?php include 'utils/navbar.php'; ?>
 
@@ -89,7 +88,7 @@
         <div class="bootstrap-tabs product-tabs">
           <div class="tabs-header d-flex justify-content-between border-bottom my-5">
             <h3>Our Products</h3>
-            <?php include 'get-product.php' ?>
+            <?php include 'get-all-product.php' ?>
           </div>
 
         </div>

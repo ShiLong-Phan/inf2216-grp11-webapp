@@ -125,8 +125,19 @@ if (empty($all_products)) {
                                     </button>
                                 </span>
                             </div>
-                            <a href="#" class="nav-link add-to-cart"
-                                data-product-id="<?php echo $product['prod_id']; ?>">Add to Cart</a>
+                            <?php if (isset($_SESSION['user_id'])): ?>
+                                <a href="#" class="nav-link add-to-cart" data-product-id="<?php echo $product['prod_id']; ?>">
+                                    Add to Cart <svg width="16" height="16">
+                                        <use xlink:href="#cart"></use>
+                                    </svg>
+                                </a>
+                            <?php else: ?>
+                                <a href="login.php" class="nav-link">
+                                    Login to Buy <svg width="16" height="16">
+                                        <use xlink:href="#user"></use>
+                                    </svg>
+                                </a>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
