@@ -16,7 +16,7 @@ if (isset($_SESSION['user_id'])) {
         $userId = $_SESSION['user_id'];
 
         // Fetch cart items with product details
-        $stmt = $conn->prepare("SELECT c.cart_id, c.cart_prod_id, c.cart_quantity, c.cart_prod_price, p.prod_name, p.prod_image, p.prod_description 
+        $stmt = $conn->prepare("SELECT c.cart_id, c.cart_prod_id, c.cart_quantity, c.cart_subtotal, p.prod_name, p.prod_image, p.prod_description 
                                FROM ssdgroup11db.cart c 
                                JOIN ssdgroup11db.products p ON c.cart_prod_id = p.prod_id 
                                WHERE c.cart_user_id = ?");
@@ -28,7 +28,7 @@ if (isset($_SESSION['user_id'])) {
         while ($row = $result->fetch_assoc()) {
             $cartItems[] = $row;
             $itemCount += $row['cart_quantity'];
-            $cartTotal += $row['cart_quantity'] * $row['cart_prod_price'];
+            $cartTotal += $row['cart_subtotal'];
         }
 
         $stmt->close();
@@ -66,51 +66,48 @@ if (isset($_SESSION['user_id'])) {
                             <li class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <div class="d-flex align-items-center">
-                                        <?php if (!empty($item['prod_image'])): ?>
-                                            <img src="images/products/<?php echo $item['prod_image']; ?>"
-                                                alt="<?php echo htmlspecialchars($item['prod_name']); ?>" class="me-2"
-                                                style="width: 50px; height: 50px; object-fit: cover;">
-                                        <?php else: ?>
-                                            <div class="me-2 bg-light"
-                                                style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
-                                                <svg width="24" height="24" viewBox="0 0 24 24">
-                                                    <use xlink:href="#image"></use>
-                                                </svg>
+                                        <div class="d-flex align-items-center">
+                                            <?php if (!empty($item['prod_image'])): ?>
+                                                <img src="images/products/<?php echo $item['prod_image']; ?>"
+                                                    alt="<?php echo htmlspecialchars($item['prod_name']); ?>" class="me-2"
+                                                    style="width: 50px; height: 50px; object-fit: cover;">
+                                            <?php else: ?>
+                                                <img src="images/product-placeholder.png" alt="Product placeholder" class="me-2"
+                                                    style="width: 50px; height: 50px; object-fit: cover;">
+                                            <?php endif; ?>
+                                            <div>
+                                                <h6 class="my-0"><?php echo htmlspecialchars($item['prod_name']); ?></h6>
+                                                <small
+                                                    class="text-body-secondary">$<?php echo number_format($item['cart_subtotal'] / $item['cart_quantity'], 2); ?>
+                                                    each</small>
                                             </div>
-                                        <?php endif; ?>
-                                        <div>
-                                            <h6 class="my-0"><?php echo htmlspecialchars($item['prod_name']); ?></h6>
-                                            <small
-                                                class="text-body-secondary">$<?php echo number_format($item['cart_prod_price']/$item['cart_quantity'], 2); ?>
-                                                each</small>
                                         </div>
+                                        <span
+                                            class="text-body-secondary">$<?php echo number_format($item['cart_subtotal'], 2); ?></span>
                                     </div>
-                                    <span
-                                        class="text-body-secondary">$<?php echo number_format($item['cart_quantity'] * $item['cart_prod_price'], 2); ?></span>
-                                </div>
 
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <!-- Quantity controls -->
-                                    <div class="d-flex align-items-center">
-                                        <button class="btn btn-sm btn-outline-secondary cart-quantity-update"
-                                            data-cart-id="<?php echo $item['cart_id']; ?>" data-action="decrease">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <!-- Quantity controls -->
+                                        <div class="d-flex align-items-center">
+                                            <button class="btn btn-sm btn-outline-secondary cart-quantity-update"
+                                                data-cart-id="<?php echo $item['cart_id']; ?>" data-action="decrease">
                                                 <i class="fa fa-minus" aria-hidden="true"></i>
-                                        </button>
-                                        <span class="mx-2"><?php echo $item['cart_quantity']; ?></span>
-                                        <button class="btn btn-sm btn-outline-secondary cart-quantity-update"
-                                            data-cart-id="<?php echo $item['cart_id']; ?>" data-action="increase">
+                                            </button>
+                                            <span class="mx-2"><?php echo $item['cart_quantity']; ?></span>
+                                            <button class="btn btn-sm btn-outline-secondary cart-quantity-update"
+                                                data-cart-id="<?php echo $item['cart_id']; ?>" data-action="increase">
                                                 <i class="fa fa-plus" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+
+                                        <!-- Remove button -->
+                                        <button class="btn btn-sm cart-item-remove" data-cart-id="<?php echo $item['cart_id']; ?>">
+                                            <svg width="16" height="16">
+                                                <use xlink:href="#trash"></use>
+                                            </svg>
+                                            Remove
                                         </button>
                                     </div>
-
-                                    <!-- Remove button -->
-                                    <button class="btn btn-sm text-danger cart-item-remove"
-                                        data-cart-id="<?php echo $item['cart_id']; ?>">
-                                        <svg width="16" height="16">
-                                            <use xlink:href="#trash"></use>
-                                        </svg>
-                                        Remove
-                                    </button>
                                 </div>
                             </li>
                         <?php endforeach; ?>

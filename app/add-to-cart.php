@@ -51,7 +51,7 @@ if (
         $new_quantity = $row['cart_quantity'] + $quantity;
         $new_total_price = $unit_price * $new_quantity; // Calculate new total price
 
-        $stmt = $conn->prepare("UPDATE ssdgroup11db.cart SET cart_quantity = ?, cart_prod_price = ? WHERE cart_user_id = ? AND cart_prod_id = ?");
+        $stmt = $conn->prepare("UPDATE ssdgroup11db.cart SET cart_quantity = ?, cart_subtotal = ? WHERE cart_user_id = ? AND cart_prod_id = ?");
         $stmt->bind_param("idii", $new_quantity, $new_total_price, $user_id, $product_id);
         $success = $stmt->execute();
 
@@ -69,7 +69,7 @@ if (
         // Insert new cart item
         $total_price = $unit_price * $quantity; // Calculate total price for new item
         
-        $stmt = $conn->prepare("INSERT INTO ssdgroup11db.cart (cart_user_id, cart_prod_id, cart_quantity, cart_prod_price) VALUES (?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO ssdgroup11db.cart (cart_user_id, cart_prod_id, cart_quantity, cart_subtotal) VALUES (?, ?, ?, ?)");
         $stmt->bind_param("iiid", $user_id, $product_id, $quantity, $total_price);
         $success = $stmt->execute();
 

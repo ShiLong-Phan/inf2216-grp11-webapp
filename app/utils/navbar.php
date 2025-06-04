@@ -9,14 +9,14 @@ if (isset($_SESSION['user_id'])) {
     if ($conn) {
         // Prepare and execute query to get cart items for the logged-in user
         $userId = $_SESSION['user_id'];
-        $stmt = $conn->prepare("SELECT cart_id, cart_quantity, cart_prod_price FROM ssdgroup11db.cart WHERE cart_user_id = ?");
+        $stmt = $conn->prepare("SELECT cart_id, cart_quantity, cart_subtotal FROM ssdgroup11db.cart WHERE cart_user_id = ?");
         $stmt->bind_param("i", $userId);
         $stmt->execute();
         $result = $stmt->get_result();
 
         // Calculate total
         while ($row = $result->fetch_assoc()) {
-            $cartTotal += $row['cart_quantity'] * $row['cart_prod_price'];
+            $cartTotal += $row['cart_subtotal'];
         }
 
         $stmt->close();
