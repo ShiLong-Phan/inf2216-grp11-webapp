@@ -20,8 +20,8 @@ $orders = [];
 
 // Define status types
 $status_types = [
-    'all' => 'All Orders',
-    'to_ship' => 'To Ship',
+    'all' => 'All',
+    'pending' => 'Pending',
     'to_receive' => 'To Receive',
     'completed' => 'Completed',
     'cancelled' => 'Cancelled'
@@ -30,19 +30,21 @@ $status_types = [
 // Fetch orders based on selected status
 $status_condition = "";
 if ($active_tab !== 'all') {
-    $status_condition = "AND o.status = ?";
+    $status_condition = "AND o.order_status = ?";
 }
 
 $sql = "SELECT o.order_id, o.order_date, o.order_total, o.order_status, 
-               COUNT(oi.item_id) as item_count,
-               (SELECT image_url FROM products p WHERE p.product_id = 
-                  (SELECT product_id FROM order_items WHERE order_id = o.order_id LIMIT 1)
-               ) as thumbnail
+               COUNT(oi.order_item_id) as item_count,
+               (SELECT p.prod_image FROM products p 
+                INNER JOIN order_item oi2 ON p.prod_id = oi2.order_item_prod_id 
+                WHERE oi2.order_item_order_id = o.order_id 
+                LIMIT 1) as thumbnail
         FROM orders o 
-        LEFT JOIN order_items oi ON o.order_id = oi.order_id
+        LEFT JOIN order_item oi ON o.order_id = oi.order_item_order_id
         WHERE o.order_user_id = ? $status_condition
         GROUP BY o.order_id
         ORDER BY o.order_date DESC";
+
 
 try {
     $stmt = $conn->prepare($sql);
