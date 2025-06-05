@@ -137,25 +137,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             break;
             
-        case 'update_order_status':
-            $order_id = intval($_POST['order_id']);
-            $order_status = sanitizeInput($_POST['order_status']);
-            
-            $valid_statuses = ['processing', 'shipped', 'delivered', 'cancelled'];
-            if (!in_array($order_status, $valid_statuses)) {
-                $errors[] = "Invalid order status";
-            } else {
-                $sql = "UPDATE orders SET order_status = ? WHERE order_id = ?";
-                $stmt = $conn->prepare($sql);
-                $stmt->bind_param("si", $order_status, $order_id);
+            case 'update_order_status':
+                $order_id = intval($_POST['order_id']);
+                $order_status = sanitizeInput($_POST['order_status']);
+                $order_delivery_address = sanitizeInput($_POST['order_delivery_address'] ?? '');
                 
-                if ($stmt->execute()) {
-                    $success_message = "Order status updated successfully!";
-                } else {
-                    $errors[] = "Failed to update order status: " . $conn->error;
+                // Validate order exists
+                if ($order_id <= 0) {
+                    $errors[] = "Invalid order ID";
                 }
-            }
-            break;
+                
+                // Validate status
+                $valid_statuses = ['Pending', 'Shipped', 'Delivered', 'Cancelled'];
+                if (!in_array($order_status, $valid_statuses)) {
+                    $errors[] = "Invalid order status. Please select a valid status.";
+                }
+                
+                // Validate delivery address
+                if (empty($order_delivery_address)) {
+                    $errors[] = "Delivery address is required";
+                }
+                
+                if (empty($errors)) {
+                    // Check if order exists first
+                    $check_sql = "SELECT order_id FROM orders WHERE order_id = ?";
+                    $check_stmt = $conn->prepare($check_sql);
+                    $check_stmt->bind_param("i", $order_id);
+                    $check_stmt->execute();
+                    $check_result = $check_stmt->get_result();
+                    
+                    if ($check_result->num_rows === 0) {
+                        $errors[] = "Order not found";
+                    } else {
+                        // Update the order status and delivery address
+                        $sql = "UPDATE orders SET order_status = ?, order_delivery_address = ? WHERE order_id = ?";
+                        $stmt = $conn->prepare($sql);
+                        $stmt->bind_param("ssi", $order_status, $order_delivery_address, $order_id);
+                        
+                        if ($stmt->execute()) {
+                            $success_message = "Order #" . str_pad($order_id, 6, '0', STR_PAD_LEFT) . " updated successfully! Status: " . ucfirst($order_status);
+                        } else {
+                            $errors[] = "Failed to update order: " . $conn->error;
+                        }
+                    }
+                }
+                break;
     }
 }
 
@@ -537,19 +563,19 @@ $orders_result = $conn->query($orders_sql);
                                                                     $status = $order['order_status'];
                                                                     $statusClass = '';
                                                                     switch(strtolower($status)) {
-                                                                        case 'pending':
+                                                                        case 'Pending':
                                                                             $statusClass = 'bg-warning text-dark';
                                                                             break;
-                                                                        case 'processing':
+                                                                        case 'Processing':
                                                                             $statusClass = 'bg-info text-white';
                                                                             break;
-                                                                        case 'shipped':
+                                                                        case 'Shipped':
                                                                             $statusClass = 'bg-primary text-white';
                                                                             break;
-                                                                        case 'delivered':
+                                                                        case 'Delivered':
                                                                             $statusClass = 'bg-success text-white';
                                                                             break;
-                                                                        case 'cancelled':
+                                                                        case 'Cancelled':
                                                                             $statusClass = 'bg-danger text-white';
                                                                             break;
                                                                         default:
@@ -560,18 +586,188 @@ $orders_result = $conn->query($orders_sql);
                                                                 </td>
                                                                 <td class="px-4 py-3">
                                                                     <div class="btn-group" role="group">
-                                                                        <button type="button" class="btn btn-sm btn-outline-primary" title="View Details">
+                                                                        <!-- View Details Button -->
+                                                                        <button type="button" 
+                                                                                class="btn btn-sm btn-outline-primary" 
+                                                                                title="View Details"
+                                                                                data-bs-toggle="modal"
+                                                                                data-bs-target="#viewOrderModal_<?php echo $order['order_id']; ?>">
                                                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
                                                                                 <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
                                                                                 <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
                                                                             </svg>
                                                                         </button>
-                                                                        <button type="button" class="btn btn-sm btn-outline-success" title="Update Status">
+                                                                        
+                                                                        <!-- Update Status Button -->
+                                                                        <button type="button" 
+                                                                                class="btn btn-sm btn-outline-success" 
+                                                                                title="Update Status"
+                                                                                data-bs-toggle="modal"
+                                                                                data-bs-target="#updateOrderModal_<?php echo $order['order_id']; ?>">
                                                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
                                                                                 <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
                                                                                 <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
                                                                             </svg>
                                                                         </button>
+                                                                    </div>
+
+                                                                    <!-- View Order Details Modal -->
+                                                                    <div class="modal fade" 
+                                                                        id="viewOrderModal_<?php echo $order['order_id']; ?>" 
+                                                                        tabindex="-1" 
+                                                                        aria-labelledby="viewOrderModalLabel_<?php echo $order['order_id']; ?>" 
+                                                                        aria-hidden="true">
+                                                                        <div class="modal-dialog modal-lg">
+                                                                            <div class="modal-content">
+                                                                                <div class="modal-header">
+                                                                                    <h5 class="modal-title" id="viewOrderModalLabel_<?php echo $order['order_id']; ?>">
+                                                                                        <i class="bi bi-receipt me-2"></i>
+                                                                                        Order Details - #<?php echo str_pad($order['order_id'], 6, '0', STR_PAD_LEFT); ?>
+                                                                                    </h5>
+                                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                                </div>
+                                                                                <div class="modal-body">
+                                                                                    <div class="row g-4">
+                                                                                        <!-- Customer Information -->
+                                                                                        <div class="col-md-6">
+                                                                                            <div class="card border-0 bg-light">
+                                                                                                <div class="card-body">
+                                                                                                    <h6 class="card-title text-primary mb-3">
+                                                                                                        <i class="bi bi-person-circle me-2"></i>Customer Information
+                                                                                                    </h6>
+                                                                                                    <p class="mb-2"><strong>Name:</strong> <?php echo htmlspecialchars($order['user_firstname'] . ' ' . $order['user_lastname']); ?></p>
+                                                                                                    <p class="mb-0"><strong>Email:</strong> <?php echo htmlspecialchars($order['user_email']); ?></p>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        
+                                                                                        <!-- Order Information -->
+                                                                                        <div class="col-md-6">
+                                                                                            <div class="card border-0 bg-light">
+                                                                                                <div class="card-body">
+                                                                                                    <h6 class="card-title text-primary mb-3">
+                                                                                                        <i class="bi bi-bag-check me-2"></i>Order Information
+                                                                                                    </h6>
+                                                                                                    <p class="mb-2"><strong>Order Date:</strong> <?php echo date('M j, Y g:i A', strtotime($order['order_date'])); ?></p>
+                                                                                                    <p class="mb-2"><strong>Total Amount:</strong> <span class="fw-bold text-success">$<?php echo number_format($order['order_total'], 2); ?></span></p>
+                                                                                                    <p class="mb-0">
+                                                                                                        <strong>Status:</strong> 
+                                                                                                        <span class="badge <?php
+                                                                                                            $status = $order['order_status'];
+                                                                                                            switch(strtolower($status)) {
+                                                                                                                case 'Pending': echo 'bg-warning text-dark'; break;
+                                                                                                                case 'Processing': echo 'bg-info text-white'; break;
+                                                                                                                case 'Shipped': echo 'bg-primary text-white'; break;
+                                                                                                                case 'Delivered': echo 'bg-success text-white'; break;
+                                                                                                                case 'Cancelled': echo 'bg-danger text-white'; break;
+                                                                                                                default: echo 'bg-secondary text-white';
+                                                                                                            }
+                                                                                                        ?>"><?php echo ucfirst($status); ?></span>
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        
+                                                                                        <!-- Delivery Address -->
+                                                                                        <div class="col-12">
+                                                                                            <div class="card border-0 bg-light">
+                                                                                                <div class="card-body">
+                                                                                                    <h6 class="card-title text-primary mb-3">
+                                                                                                        <i class="bi bi-geo-alt me-2"></i>Delivery Address
+                                                                                                    </h6>
+                                                                                                    <p class="mb-0"><?php echo nl2br(htmlspecialchars($order['order_delivery_address'])); ?></p>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="modal-footer">
+                                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                                                    <button type="button" 
+                                                                                            class="btn btn-primary" 
+                                                                                            data-bs-dismiss="modal"
+                                                                                            data-bs-toggle="modal"
+                                                                                            data-bs-target="#updateOrderModal_<?php echo $order['order_id']; ?>">
+                                                                                        <i class="bi bi-pencil-square me-2"></i>Edit Order
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <!-- Update Order Modal -->
+                                                                    <div class="modal fade" 
+                                                                        id="updateOrderModal_<?php echo $order['order_id']; ?>" 
+                                                                        tabindex="-1" 
+                                                                        aria-labelledby="updateOrderModalLabel_<?php echo $order['order_id']; ?>" 
+                                                                        aria-hidden="true">
+                                                                        <div class="modal-dialog modal-lg">
+                                                                            <div class="modal-content">
+                                                                                <form method="POST">
+                                                                                    <input type="hidden" name="action" value="update_order_status">
+                                                                                    <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
+                                                                                    <div class="modal-header">
+                                                                                        <h5 class="modal-title" id="updateOrderModalLabel_<?php echo $order['order_id']; ?>">
+                                                                                            <i class="bi bi-pencil-square me-2"></i>
+                                                                                            Update Order - #<?php echo str_pad($order['order_id'], 6, '0', STR_PAD_LEFT); ?>
+                                                                                        </h5>
+                                                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                                    </div>
+                                                                                    <div class="modal-body">
+                                                                                        <div class="row g-3">
+                                                                                            <!-- Customer Info (Read Only) -->
+                                                                                            <div class="col-md-6">
+                                                                                                <label class="form-label fw-bold">Customer</label>
+                                                                                                <input type="text" 
+                                                                                                    class="form-control-plaintext" 
+                                                                                                    value="<?php echo htmlspecialchars($order['user_firstname'] . ' ' . $order['user_lastname']); ?>" 
+                                                                                                    readonly>
+                                                                                                <small class="text-muted"><?php echo htmlspecialchars($order['user_email']); ?></small>
+                                                                                            </div>
+                                                                                            
+                                                                                            <!-- Order Total (Read Only) -->
+                                                                                            <div class="col-md-6">
+                                                                                                <label class="form-label fw-bold">Order Total</label>
+                                                                                                <input type="text" 
+                                                                                                    class="form-control-plaintext" 
+                                                                                                    value="$<?php echo number_format($order['order_total'], 2); ?>" 
+                                                                                                    readonly>
+                                                                                                <small class="text-muted">Date: <?php echo date('M j, Y g:i A', strtotime($order['order_date'])); ?></small>
+                                                                                            </div>
+                                                                                            
+                                                                                            <!-- Order Status -->
+                                                                                            <div class="col-md-6">
+                                                                                                <label for="order_status_<?php echo $order['order_id']; ?>" class="form-label fw-bold">Order Status</label>
+                                                                                                <select class="form-select" name="order_status" id="order_status_<?php echo $order['order_id']; ?>" required>
+                                                                                                    <option value="">Select Status</option>
+                                                                                                    <option value="Pending" <?php echo ($order['order_status'] == 'Pending') ? 'selected' : ''; ?>>Pending</option>
+                                                                                                    <option value="Shipped" <?php echo ($order['order_status'] == 'Shipped') ? 'selected' : ''; ?>>Shipped</option>
+                                                                                                    <option value="Delivered" <?php echo ($order['order_status'] == 'Delivered') ? 'selected' : ''; ?>>Delivered</option>
+                                                                                                    <option value="Cancelled" <?php echo ($order['order_status'] == 'Cancelled') ? 'selected' : ''; ?>>Cancelled</option>
+                                                                                                </select>
+                                                                                            </div>
+                                                                                            
+                                                                                            <!-- Delivery Address -->
+                                                                                            <div class="col-12">
+                                                                                                <label for="delivery_address_<?php echo $order['order_id']; ?>" class="form-label fw-bold">Delivery Address</label>
+                                                                                                <textarea class="form-control" 
+                                                                                                        name="order_delivery_address" 
+                                                                                                        id="delivery_address_<?php echo $order['order_id']; ?>" 
+                                                                                                        rows="3" 
+                                                                                                        required><?php echo htmlspecialchars($order['order_delivery_address']); ?></textarea>
+                                                                                                <div class="form-text">You can update the delivery address if needed.</div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="modal-footer">
+                                                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                                        <button type="submit" class="btn btn-success">
+                                                                                            <i class="bi bi-check-circle me-2"></i>Update Order
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </form>
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
                                                                 </td>
                                                             </tr>
