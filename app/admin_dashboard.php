@@ -47,6 +47,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($prod_price <= 0) {
                 $errors[] = "Product price must be greater than 0";
             }
+            // ADD THESE PRICE VALIDATIONS
+            if ($prod_price > 999.99) {
+                $errors[] = "Product price cannot exceed $999.99";
+            }
+            if ($prod_price < 0.01) {
+                $errors[] = "Product price must be at least $0.01";
+            }
+            // Check for too many decimal places
+            if (round($prod_price, 2) != $prod_price) {
+                $errors[] = "Product price can only have up to 2 decimal places";
+            }
             if (empty($prod_category)) {
                 $errors[] = "Product category is required";
             }
@@ -81,6 +92,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             if ($prod_price <= 0) {
                 $errors[] = "Product price must be greater than 0";
+            }
+            // ADD THE SAME PRICE VALIDATIONS HERE TOO
+            if ($prod_price > 999.99) {
+                $errors[] = "Product price cannot exceed $999.99";
+            }
+            if ($prod_price < 0.01) {
+                $errors[] = "Product price must be at least $0.01";
+            }
+            if (round($prod_price, 2) != $prod_price) {
+                $errors[] = "Product price can only have up to 2 decimal places";
+            }
+            
+            if (empty($prod_category)) {
+                $errors[] = "Product category is required";
             }
             if (empty($prod_category)) {
                 $errors[] = "Product category is required";
@@ -273,7 +298,7 @@ $orders_result = $conn->query($orders_sql);
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label for="prod_price" class="form-label">Price ($)</label>
-                                                        <input type="number" step="0.01" class="form-control" name="prod_price" id="prod_price" required>
+                                                        <input type="number" step="0.01" min="0.01" max="999.99" class="form-control" name="prod_price" id="prod_price" required>
                                                     </div>
                                                     <div class="col-12">
                                                         <label for="prod_description" class="form-label">Description</label>
@@ -293,7 +318,7 @@ $orders_result = $conn->query($orders_sql);
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label for="prod_image" class="form-label">Image URL</label>
-                                                        <input type="text" class="form-control" name="prod_image" id="prod_image" required>
+                                                        <input type="text" class="form-control" name="prod_image" id="prod_image">
                                                     </div>
                                                     </div>
                                                     <div class="modal-footer">
@@ -405,7 +430,7 @@ $orders_result = $conn->query($orders_sql);
                                                                                     </div>
                                                                                     <div class="mb-2">
                                                                                         <label class="form-label">Price</label>
-                                                                                        <input type="number" class="form-control" name="prod_price" step="0.01"
+                                                                                        <input type="number" min="0.01" max="999.99" class="form-control" name="prod_price" step="0.01"
                                                                                             value="<?php echo $product['prod_price']; ?>" required>
                                                                                     </div>
                                                                                     <div class="mb-2">
