@@ -23,7 +23,7 @@ if (!defined('INCLUDED')) {
         </a>
         
         <figure>
-            <a href="product.php?id=<?php echo $product['prod_id']; ?>" 
+            <a href="product-detail.php?id=<?php echo $product['prod_id']; ?>" 
                title="<?php echo htmlspecialchars($product['prod_name']); ?>">
                 <img src="<?php echo !empty($product['prod_image']) ? 'images/products/' . $product['prod_image'] : 'images/product-placeholder.png'; ?>"
                      class="tab-image" alt="<?php echo htmlspecialchars($product['prod_name']); ?>">
