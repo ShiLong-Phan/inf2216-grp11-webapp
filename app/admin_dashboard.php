@@ -36,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $prod_price = floatval($_POST['prod_price']);
             $prod_category = sanitizeInput($_POST['prod_category']);
             $prod_image = sanitizeInput($_POST['prod_image']);
+            $prod_stock = intval($_POST['prod_stock']);
             
             // Validate product data
             if (empty($prod_name)) {
@@ -61,11 +62,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($prod_category)) {
                 $errors[] = "Product category is required";
             }
+            if ($prod_stock < 0) {
+                $errors[] = "Stock quantity cannot be negative";
+            }
             
             if (empty($errors)) {
-                $sql = "INSERT INTO products (prod_name, prod_description, prod_price, prod_category, prod_image, prod_date_added) VALUES (?, ?, ?, ?, ?, NOW())";
+                $sql = "INSERT INTO products (prod_name, prod_description, prod_price, prod_category, prod_image, prod_stock, prod_date_added) VALUES (?, ?, ?, ?, ?, ?, NOW())";
                 $stmt = $conn->prepare($sql);
-                $stmt->bind_param("ssdss", $prod_name, $prod_description, $prod_price, $prod_category, $prod_image);
+                $stmt->bind_param("ssdssi", $prod_name, $prod_description, $prod_price, $prod_category, $prod_image, $prod_stock);
                 
                 if ($stmt->execute()) {
                     $success_message = "Product added successfully!";
@@ -82,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $prod_price = floatval($_POST['prod_price']);
             $prod_category = sanitizeInput($_POST['prod_category']);
             $prod_image = sanitizeInput($_POST['prod_image']);
+            $prod_stock = intval($_POST['prod_stock']);
             
             // Validate product data
             if (empty($prod_name)) {
@@ -110,11 +115,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($prod_category)) {
                 $errors[] = "Product category is required";
             }
+            if ($prod_stock < 0) {
+                $errors[] = "Stock quantity cannot be negative";
+            }
             
             if (empty($errors)) {
-                $sql = "UPDATE products SET prod_name = ?, prod_description = ?, prod_price = ?, prod_category = ?, prod_image = ? WHERE prod_id = ?";
+                $sql = "UPDATE products SET prod_name = ?, prod_description = ?, prod_price = ?, prod_category = ?, prod_image = ?, prod_stock = ? WHERE prod_id = ?";
                 $stmt = $conn->prepare($sql);
-                $stmt->bind_param("ssdssi", $prod_name, $prod_description, $prod_price, $prod_category, $prod_image, $prod_id);
+                $stmt->bind_param("ssdssii", $prod_name, $prod_description, $prod_price, $prod_category, $prod_image, $prod_stock, $prod_id);
                 
                 if ($stmt->execute()) {
                     $success_message = "Product updated successfully!";
@@ -343,6 +351,11 @@ $orders_result = $conn->query($orders_sql);
                                                         </select>
                                                     </div>
                                                     <div class="col-md-6">
+                                                        <label for="prod_stock" class="form-label">Stock Quantity</label>
+                                                        <input type="number" min="0" class="form-control" name="prod_stock" id="prod_stock" value="0" required>
+                                                        <div class="form-text">Number of items in stock</div>
+                                                    </div>
+                                                    <div class="col-md-6">
                                                         <label for="prod_image" class="form-label">Image URL</label>
                                                         <input type="text" class="form-control" name="prod_image" id="prod_image">
                                                     </div>
@@ -367,6 +380,7 @@ $orders_result = $conn->query($orders_sql);
                                                     <th class="px-4 py-3">Name</th>
                                                     <th class="px-4 py-3">Category</th>
                                                     <th class="px-4 py-3">Price</th>
+                                                    <th class="px-4 py-3">Stock</th>
                                                     <th class="px-4 py-3">Date Added</th>
                                                     <th class="px-4 py-3">Actions</th>
                                                 </tr>
@@ -395,14 +409,24 @@ $orders_result = $conn->query($orders_sql);
                                                                 <td class="px-4 py-3">
                                                                     <span class="fw-medium">$<?php echo number_format($product['prod_price'], 2); ?></span>
                                                                 </td>
-                                                                <!-- stock, remove if dont need -->
-                                                                <!-- <td class="px-4 py-3">
+                                                                <td class="px-4 py-3">
                                                                     <?php 
                                                                     $stock = $product['prod_stock'];
-                                                                    $stockClass = $stock <= 10 ? 'text-danger' : ($stock <= 50 ? 'text-warning' : 'text-success');
+                                                                    // Determine stock status text
+                                                                    if ($stock < 10) {
+                                                                        $stockStatus = 'Low Stock';
+                                                                    } elseif ($stock <= 50) {
+                                                                        $stockStatus = 'Medium Stock';
+                                                                    } else {
+                                                                        $stockStatus = 'High Stock';
+                                                                    }
                                                                     ?>
-                                                                    <span class="<?php echo $stockClass; ?> fw-medium"><?php echo $stock; ?></span>
-                                                                </td> -->
+                                                                    
+                                                                    <div class="d-flex flex-column align-items-start" style="gap: 2px;">
+                                                                        <span class="fw-medium"><?php echo $stock; ?></span>
+                                                                        <small class="text-muted"><?php echo $stockStatus; ?></small>
+                                                                    </div>
+                                                                </td>
                                                                 <td class="px-4 py-3 text-muted"><?php echo date('M j, Y', strtotime($product['prod_date_added'])); ?></td>
                                                                 <td class="px-4 py-3">
                                                                 <div class="d-flex align-items-center gap-2">
@@ -454,10 +478,21 @@ $orders_result = $conn->query($orders_sql);
                                                                                         <label class="form-label">Description</label>
                                                                                         <textarea class="form-control" name="prod_description" required><?php echo htmlspecialchars($product['prod_description']); ?></textarea>
                                                                                     </div>
-                                                                                    <div class="mb-2">
-                                                                                        <label class="form-label">Price</label>
-                                                                                        <input type="number" min="0.01" max="999.99" class="form-control" name="prod_price" step="0.01"
-                                                                                            value="<?php echo $product['prod_price']; ?>" required>
+                                                                                    <div class="row">
+                                                                                        <div class="col-md-6">
+                                                                                            <div class="mb-2">
+                                                                                                <label class="form-label">Price</label>
+                                                                                                <input type="number" min="0.01" max="999.99" class="form-control" name="prod_price" step="0.01"
+                                                                                                    value="<?php echo $product['prod_price']; ?>" required>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div class="col-md-6">
+                                                                                            <div class="mb-2">
+                                                                                                <label class="form-label">Stock Quantity</label>
+                                                                                                <input type="number" min="0" class="form-control" name="prod_stock"
+                                                                                                    value="<?php echo $product['prod_stock']; ?>" required>
+                                                                                            </div>
+                                                                                        </div>
                                                                                     </div>
                                                                                     <div class="mb-2">
                                                                                         <label class="form-label">Category</label>
@@ -532,7 +567,7 @@ $orders_result = $conn->query($orders_sql);
                                             <table class="table table-hover mb-0">
                                                 <thead class="bg-light">
                                                     <tr>
-                                                        <th class="px-4 py-3">Order ID</th>
+                                                        <th class="px-4 py-3">ID</th>
                                                         <th class="px-4 py-3">Customer</th>
                                                         <th class="px-4 py-3">Date</th>
                                                         <th class="px-4 py-3">Total</th>
