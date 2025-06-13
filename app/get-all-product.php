@@ -17,8 +17,11 @@ if (!$conn) {
 echo "<!-- Database connection successful -->";
 
 // Prepare the statement:
-$stmt = $conn->prepare("SELECT * FROM ssdgroup11db.products");
-
+$stmt = $conn->prepare("SELECT * FROM ssdgroup11db.products 
+                        ORDER BY 
+                            CASE WHEN prod_stock > 0 THEN 0 ELSE 1 END, -- In-stock items first
+                            prod_id ASC");
+                            
 // Check if statement preparation was successful
 if (!$stmt) {
     die("Statement preparation failed: " . $conn->error);
