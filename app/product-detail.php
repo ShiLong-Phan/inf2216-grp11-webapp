@@ -141,54 +141,74 @@ include "utils/navbar.php";
                             </p>
                         </div>
 
+
                         <div class="mb-4">
                             <div class="row align-items-center">
                                 <div class="col-md-4 col-6">
-                                    <label for="quantity" class="form-label">Quantity</label>
-                                    <div class="input-group product-qty">
-                                        <span class="input-group-btn">
-                                            <button type="button" class="quantity-left-minus btn btn-danger btn-number"
-                                                data-type="minus">
-                                                <svg width="16" height="16">
-                                                    <use xlink:href="#minus"></use>
-                                                </svg>
-                                            </button>
-                                        </span>
+                                    <?php if (isset($product['prod_stock']) && $product['prod_stock'] > 0): ?>
+                                        <label for="quantity" class="form-label">Quantity</label>
+                                        <div class="input-group product-qty">
+                                            <span class="input-group-btn">
+                                                <button type="button" class="quantity-left-minus btn btn-danger btn-number"
+                                                    data-type="minus">
+                                                    <svg width="16" height="16">
+                                                        <use xlink:href="#minus"></use>
+                                                    </svg>
+                                                </button>
+                                            </span>
 
-                                        <input type="text" id="quantity" name="quantity"
-                                            class="form-control input-number" value="1" min="1">
+                                            <input type="text" id="quantity" name="quantity"
+                                                class="form-control input-number" value="1" min="1"
+                                                max="<?php echo intval($product['prod_stock']); ?>">
 
-                                        <span class="input-group-btn">
-                                            <button type="button" class="quantity-right-plus btn btn-success btn-number"
-                                                data-type="plus">
-                                                <svg width="16" height="16">
-                                                    <use xlink:href="#plus"></use>
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </div>
+                                            <span class="input-group-btn">
+                                                <button type="button" class="quantity-right-plus btn btn-success btn-number"
+                                                    data-type="plus">
+                                                    <svg width="16" height="16">
+                                                        <use xlink:href="#plus"></use>
+                                                    </svg>
+                                                </button>
+                                            </span>
+                                        </div>
+                                        <small class="text-muted">
+                                            <?php echo $product['prod_stock']; ?> items available
+                                        </small>
+                                    <?php else: ?>
+                                        <div class="alert alert-danger">
+                                            <strong>Out of Stock</strong>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
 
                         <div class="d-flex flex-wrap gap-2 mb-4">
-                            <?php if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] == 0): ?>
-                                <button type="button" class="btn btn-primary btn-lg flex-grow-1 add-to-cart"
-                                    data-product-id="<?php echo $product['prod_id']; ?>">
-                                    <svg width="18" height="18" class="me-2">
-                                        <use xlink:href="#cart"></use>
-                                    </svg>
-                                    Add to Cart
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary btn-lg">
-                                    <svg width="18" height="18">
-                                        <use xlink:href="#heart"></use>
-                                    </svg>
-                                </button>
-                            <?php else: ?>
+                            <?php if (!isset($_SESSION['user_id'])): ?>
+                                <!-- Not logged in users see login button -->
                                 <a href="login.php" class="btn btn-primary btn-lg flex-grow-1">
                                     Login to Buy
                                 </a>
+                            <?php elseif (isset($_SESSION['user_id']) && $_SESSION['user_role'] == 0): ?>
+                                <?php if (isset($product['prod_stock']) && $product['prod_stock'] > 0): ?>
+                                    <button type="button" class="btn btn-primary btn-lg flex-grow-1 add-to-cart"
+                                        data-product-id="<?php echo $product['prod_id']; ?>"
+                                        data-max-stock="<?php echo intval($product['prod_stock']); ?>">
+                                        <svg width="18" height="18" class="me-2">
+                                            <use xlink:href="#cart"></use>
+                                        </svg>
+                                        Add to Cart
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-lg">
+                                        <svg width="18" height="18">
+                                            <use xlink:href="#heart"></use>
+                                        </svg>
+                                    </button>
+                                <?php else: ?>
+                                    <!-- Out of stock message -->
+                                    <button type="button" class="btn btn-secondary btn-lg flex-grow-1" disabled>
+                                        Out of Stock
+                                    </button>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </div>
 
@@ -238,77 +258,117 @@ include "utils/navbar.php";
     <?php endif; ?>
 </main>
 
-<!-- Add JavaScript for product functionality -->
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Replace the current quantity control JavaScript with this:
-        // Quantity controls
+        // Get elements once
         const quantityInput = document.getElementById('quantity');
-        const minusBtn = document.querySelector('.quantity-left-minus');
-        const plusBtn = document.querySelector('.quantity-right-plus');
-
-        // Use a single event handler at the container level instead of individual buttons
-        document.querySelector('.product-qty').addEventListener('click', function (e) {
-            // Find the closest button ancestor of the clicked element
-            const button = e.target.closest('button');
-            if (!button) return; // Exit if click wasn't on or inside a button
-
+        const addToCartBtn = document.querySelector('.add-to-cart');
+        
+        if (!quantityInput) return;
+        
+        const maxStock = parseInt(quantityInput.getAttribute('max')) || 1;
+        
+        // Use direct event listeners on parent elements to avoid event bubbling issues
+        document.querySelector('.product-qty').addEventListener('click', function(e) {
+            // Only proceed if we clicked on one of the buttons or their SVG children
+            const button = e.target.closest('.btn-number');
+            if (!button) return;
+            
             e.preventDefault();
-
-            const val = parseInt(quantityInput.value);
-
-            if (button.classList.contains('quantity-left-minus')) {
-                // Decrease quantity
-                if (val > 1) {
-                    quantityInput.value = val - 1;
+            
+            const type = button.getAttribute('data-type');
+            const currentValue = parseInt(quantityInput.value);
+            
+            if (type === 'minus') {
+                // Decrease quantity by exactly 1
+                if (!isNaN(currentValue) && currentValue > 1) {
+                    quantityInput.value = currentValue - 1;
                 }
-            } else if (button.classList.contains('quantity-right-plus')) {
-                // Increase quantity
-                quantityInput.value = val + 1;
+            } else if (type === 'plus') {
+                // Increase quantity by exactly 1
+                if (!isNaN(currentValue) && currentValue < maxStock) {
+                    quantityInput.value = currentValue + 1;
+                }
             }
         });
-
-        // Remove individual button event listeners to avoid conflictss
-
-        // Add to cart functionality
-        const addToCartBtn = document.querySelector('.add-to-cart');
+        
+        // Validate input when changed directly
+        quantityInput.addEventListener('change', function () {
+            let val = parseInt(this.value);
+            if (isNaN(val) || val < 1) {
+                this.value = 1;
+            } else if (val > maxStock) {
+                this.value = maxStock;
+            }
+        });
+        
+        // Add to cart functionality - keep this part unchanged
         if (addToCartBtn) {
             addToCartBtn.addEventListener('click', function () {
                 const productId = this.getAttribute('data-product-id');
-                const quantity = document.getElementById('quantity').value;
-
-                // Create form data for AJAX request
-                const formData = new FormData();
-                formData.append('product_id', productId);
-                formData.append('quantity', quantity);
-
-                // Send AJAX request to add-to-cart.php
+                const quantity = parseInt(quantityInput.value);
+                
+                if (isNaN(quantity) || quantity < 1) {
+                    alert('Please select a valid quantity');
+                    return;
+                }
+                
+                // Show loading state
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...';
+                
+                // Send AJAX request to add to cart
                 fetch('add-to-cart.php', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `product_id=${productId}&quantity=${quantity}`
                 })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Show success message
-                            alert(data.message);
-
-                            // Refresh cart icon or count if needed
-                            // This depends on how your cart count is displayed
-                            // You might need to add code here to update cart count
-
-                            // Optional: reload the page or redirect to cart
-                            // window.location.reload();
-                            // window.location.href = 'cart.php';
-                        } else {
-                            // Show error message
-                            alert(data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while adding to cart');
-                    });
+                .then(response => response.json())
+                .then(data => {
+                    // Reset button
+                    this.disabled = false;
+                    this.innerHTML = '<svg width="18" height="18" class="me-2"><use xlink:href="#cart"></use></svg>Add to Cart';
+                    
+                    if (data.success) {
+                        // Create bootstrap toast
+                        const toastContainer = document.createElement('div');
+                        toastContainer.className = 'position-fixed bottom-0 end-0 p-3';
+                        toastContainer.style.zIndex = '11';
+                        
+                        toastContainer.innerHTML = `
+                            <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                                <div class="d-flex">
+                                    <div class="toast-body">
+                                        <strong>Success!</strong> Item added to your cart.
+                                    </div>
+                                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        document.body.appendChild(toastContainer);
+                        
+                        const toastEl = toastContainer.querySelector('.toast');
+                        const toast = new bootstrap.Toast(toastEl);
+                        toast.show();
+                        
+                        // Refresh cart icon/counter if needed
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    this.disabled = false;
+                    this.innerHTML = '<svg width="18" height="18" class="me-2"><use xlink:href="#cart"></use></svg>Add to Cart';
+                    alert('An error occurred while adding to cart. Please try again.');
+                });
             });
         }
     });

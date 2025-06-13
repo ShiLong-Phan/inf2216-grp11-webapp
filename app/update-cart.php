@@ -33,13 +33,25 @@ $cartItem = $result->fetch_assoc();
 $currentQuantity = $cartItem['cart_quantity'];
 $productId = $cartItem['cart_prod_id'];
 
-// Get the unit price from the products table
-$stmt = $conn->prepare("SELECT prod_price FROM ssdgroup11db.products WHERE prod_id = ?");
+// Get the product price and current stock
+$stmt = $conn->prepare("SELECT prod_price, prod_stock FROM ssdgroup11db.products WHERE prod_id = ?");
 $stmt->bind_param("i", $productId);
 $stmt->execute();
 $result = $stmt->get_result();
 $product = $result->fetch_assoc();
 $unitPrice = $product['prod_price'];
+$stockAvailable = $product['prod_stock'];
+
+// Calculate how many of this item are in other carts (temporary holds)
+$stmt = $conn->prepare("SELECT SUM(cart_quantity) as reserved FROM ssdgroup11db.cart 
+                       WHERE cart_prod_id = ? AND cart_user_id != ?");
+$stmt->bind_param("ii", $productId, $userId);
+$stmt->execute();
+$result = $stmt->get_result();
+$reserved = $result->fetch_assoc()['reserved'] ?? 0;
+
+// Calculate effectively available stock (actual stock minus items in other carts)
+$effectiveStock = $stockAvailable - $reserved;
 
 // Initialize response array
 $response = ['success' => false, 'message' => 'Unknown error occurred'];
@@ -48,6 +60,20 @@ $response = ['success' => false, 'message' => 'Unknown error occurred'];
 switch ($action) {
     case 'increase':
         $newQuantity = $currentQuantity + 1;
+
+        // Check if increasing quantity would exceed available stock
+        if ($newQuantity > $effectiveStock) {
+            // If other users have some in their carts
+            if ($effectiveStock < $stockAvailable) {
+                $response['success'] = false;
+                $response['message'] = "Only {$effectiveStock} items are available (others have some in their carts). Your quantity cannot be increased.";
+            } else {
+                $response['success'] = false;
+                $response['message'] = 'Cannot add more of this item. Maximum stock reached.';
+            }
+            break;
+        }
+
         $newTotalPrice = $unitPrice * $newQuantity;
 
         $updateStmt = $conn->prepare("UPDATE ssdgroup11db.cart SET cart_quantity = ?, cart_subtotal = ? WHERE cart_id = ?");
@@ -62,7 +88,6 @@ switch ($action) {
             $response['message'] = 'Failed to update quantity: ' . $conn->error;
         }
         break;
-
     case 'decrease':
         if ($currentQuantity <= 1) {
             // If quantity is 1, remove the item
@@ -111,6 +136,11 @@ switch ($action) {
     default:
         $response['message'] = 'Invalid action';
 }
+
+// Add stock information to the response
+$response['stock_available'] = $stockAvailable;
+$response['reserved_in_other_carts'] = $reserved;
+$response['effective_stock'] = $effectiveStock;
 
 // Return JSON response
 echo json_encode($response);
