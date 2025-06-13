@@ -7,8 +7,17 @@ if (!$conn) {
     die("<!-- Database connection failed in new-arrivals.php: " . mysqli_connect_error() . " -->");
 }
 
+// Only define INCLUDED if it's not already defined
+if (!defined('INCLUDED')) {
+    define('INCLUDED', true);
+}
 // Get the most recent products (new arrivals) sorted by date added
-$stmt = $conn->prepare("SELECT * FROM ssdgroup11db.products ORDER BY prod_date_added DESC LIMIT 8");
+// Show in-stock products first, then sort by date
+$stmt = $conn->prepare("SELECT * FROM ssdgroup11db.products 
+                        ORDER BY 
+                          CASE WHEN prod_stock > 0 THEN 0 ELSE 1 END, -- In-stock items first
+                          prod_date_added DESC 
+                        LIMIT 8");
 
 if (!$stmt) {
     die("<!-- Statement preparation failed in new-arrivals.php: " . $conn->error . " -->");
@@ -34,9 +43,9 @@ if ($result) {
     <div class="row">
       <div class="col-md-12">
         <div class="section-header d-flex justify-content-between">
-          <h2 class="section-title">Just arrived</h2>
+          <h2 class="section-title">New arrivals</h2>
           <div class="d-flex align-items-center">
-            <a href="#" class="btn-link text-decoration-none">View All Categories →</a>
+            <a href="#" class="btn-link text-decoration-none">View All Products →</a>
             <div class="swiper-buttons">
               <button class="swiper-prev products-carousel-prev btn btn-primary">❮</button>
               <button class="swiper-next products-carousel-next btn btn-primary">❯</button>
@@ -55,44 +64,65 @@ if ($result) {
               </div>
             <?php else: ?>
               <?php foreach ($new_arrivals as $product): ?>
+                <?php
+                // Check if product is out of stock
+                $isOutOfStock = isset($product['prod_stock']) && $product['prod_stock'] <= 0;
+                ?>
                 <div class="product-item swiper-slide">
-                  <?php if (rand(1, 3) == 1): // Randomly show discount badge for demo ?>
-                    <span class="badge bg-success position-absolute m-3">-<?php echo rand(10, 30); ?>%</span>
+                  <?php if ($isOutOfStock): ?>
+                    <div class="out-of-stock-badge">
+                      <span class="badge bg-danger">Out of Stock</span>
+                    </div>
                   <?php endif; ?>
-                  <a href="#" class="btn-wishlist"><svg width="24" height="24">
-                      <use xlink:href="#heart"></use>
-                    </svg></a>
+                  
                   <figure>
                     <a href="product-detail.php?id=<?php echo $product['prod_id']; ?>" title="<?php echo htmlspecialchars($product['prod_name']); ?>">
                       <img src="<?php echo !empty($product['prod_image']) ? 'images/products/' . $product['prod_image'] : 'images/product-placeholder.png'; ?>" 
-                           class="tab-image" alt="<?php echo htmlspecialchars($product['prod_name']); ?>">
+                           class="tab-image <?php echo $isOutOfStock ? 'grayscale' : ''; ?>" 
+                           alt="<?php echo htmlspecialchars($product['prod_name']); ?>">
                     </a>
                   </figure>
+                  
                   <h3><?php echo htmlspecialchars($product['prod_name']); ?></h3>
                   <span class="qty">1 Unit</span>
-                  <span class="rating"><svg width="24" height="24" class="text-primary">
-                      <use xlink:href="#star-solid"></use>
-                    </svg> <?php echo number_format(rand(35, 50) / 10, 1); ?></span>
                   <span class="price">$<?php echo number_format($product['prod_price'], 2); ?></span>
+                  
                   <div class="d-flex align-items-center justify-content-between">
-                    <div class="input-group product-qty">
-                      <span class="input-group-btn">
-                        <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                          <svg width="16" height="16">
-                            <use xlink:href="#minus"></use>
-                          </svg>
-                        </button>
-                      </span>
-                      <input type="text" id="na_quantity_<?php echo $product['prod_id']; ?>" name="quantity" class="form-control input-number" value="1">
-                      <span class="input-group-btn">
-                        <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                          <svg width="16" height="16">
-                            <use xlink:href="#plus"></use>
-                          </svg>
-                        </button>
-                      </span>
-                    </div>
-                    <a href="#" class="nav-link add-to-cart" data-product-id="<?php echo $product['prod_id']; ?>">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
+                    <?php if (!$isOutOfStock): ?>
+                      <!-- Only show quantity controls and add to cart if in stock -->
+                      <div class="input-group product-qty">
+                        <span class="input-group-btn">
+                          <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
+                            <svg width="16" height="16">
+                              <use xlink:href="#minus"></use>
+                            </svg>
+                          </button>
+                        </span>
+                        <input type="text" id="na_quantity_<?php echo $product['prod_id']; ?>" name="quantity" class="form-control input-number" value="1">
+                        <span class="input-group-btn">
+                          <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
+                            <svg width="16" height="16">
+                              <use xlink:href="#plus"></use>
+                            </svg>
+                          </button>
+                        </span>
+                      </div>
+                      
+                      <?php if (isset($_SESSION['user_id'])): ?>
+                        <a href="#" class="nav-link add-to-cart" data-product-id="<?php echo $product['prod_id']; ?>">
+                          Add to Cart <svg width="16" height="16"><use xlink:href="#cart"></use></svg>
+                        </a>
+                      <?php else: ?>
+                        <a href="login.php" class="nav-link">
+                          Login to Buy <svg width="16" height="16"><use xlink:href="#user"></use></svg>
+                        </a>
+                      <?php endif; ?>
+                    <?php else: ?>
+                      <!-- Placeholder div that mimics the appearance of the controls -->
+                      <div class="d-flex w-100 justify-content-center">
+                        <span class="out-of-stock-message">Currently Unavailable</span>
+                      </div>
+                    <?php endif; ?>
                   </div>
                 </div>
               <?php endforeach; ?>
@@ -105,15 +135,35 @@ if ($result) {
   </div>
 </section>
 
-<script>
-// Add to cart functionality specifically for new arrivals
-document.addEventListener('DOMContentLoaded', function() {
-  // This code only affects elements within the new-arrivals section
-  const newArrivalsSection = document.querySelector('section:has(.section-title:contains("Just arrived"))');
-  if (!newArrivalsSection) return;
+<style>
+  .out-of-stock-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 5;
+  }
   
-  const minusButtons = newArrivalsSection.querySelectorAll('.quantity-left-minus');
-  const plusButtons = newArrivalsSection.querySelectorAll('.quantity-right-plus');
+  .out-of-stock-message {
+    color: #dc3545;
+    font-weight: bold;
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: 5px;
+  }
+  
+  /* Subtle grayscale for image only */
+  .grayscale {
+    filter: grayscale(50%);
+    opacity: 0.9;
+  }
+</style>
+
+<script>
+// Add to cart functionality for new arrivals
+document.addEventListener('DOMContentLoaded', function() {
+  // Quantity buttons functionality
+  const minusButtons = document.querySelectorAll('.products-carousel .quantity-left-minus');
+  const plusButtons = document.querySelectorAll('.products-carousel .quantity-right-plus');
   
   minusButtons.forEach(button => {
     button.addEventListener('click', function() {
@@ -135,7 +185,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
   
-  const addToCartButtons = newArrivalsSection.querySelectorAll('.add-to-cart');
+  // Add to cart functionality using AJAX
+  const addToCartButtons = document.querySelectorAll('.products-carousel .add-to-cart');
   addToCartButtons.forEach(button => {
     button.addEventListener('click', function(e) {
       e.preventDefault();
@@ -143,9 +194,74 @@ document.addEventListener('DOMContentLoaded', function() {
       const quantityInput = this.closest('.product-item').querySelector('input[name="quantity"]');
       const quantity = quantityInput ? quantityInput.value : 1;
       
-      console.log(`Adding new arrival product ID ${productId} with quantity ${quantity} to cart`);
-      alert(`Product added to cart! (ID: ${productId}, Quantity: ${quantity})`);
+      // Create form data for the AJAX request
+      const formData = new FormData();
+      formData.append('product_id', productId);
+      formData.append('quantity', quantity);
+      
+      // Send AJAX request to add-to-cart.php
+      fetch('add-to-cart.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Show success message
+          showNotification('success', data.message);
+          
+          // Update cart total if needed
+          updateCartDisplay();
+        } else {
+          // Show error message
+          showNotification('error', data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showNotification('error', 'An error occurred while adding to cart');
+      });
     });
   });
+  
+  // Function to show notification
+  function showNotification(type, message) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} notification`;
+    notification.textContent = message;
+    
+    // Add to the document
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
+  }
+  
+  // Function to update cart display (total, count, etc.)
+  function updateCartDisplay() {
+    // You can add AJAX call here to get updated cart data if needed
+    // This example just reloads the page after a short delay
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  }
 });
 </script>
+
+<style>
+  /* Notification styles */
+  .notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 250px;
+    padding: 15px;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    opacity: 0.9;
+  }
+</style>
