@@ -174,9 +174,7 @@ include "utils/navbar.php";
                                             <?php echo $product['prod_stock']; ?> items available
                                         </small>
                                     <?php else: ?>
-                                        <div class="alert alert-danger">
-                                            <strong>Out of Stock</strong>
-                                        </div>
+                                        
                                     <?php endif; ?>
                                 </div>
                             </div>
