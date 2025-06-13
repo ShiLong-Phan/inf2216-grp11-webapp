@@ -32,13 +32,13 @@ if ($conn) {
     $orderStmt->bind_param("ii", $orderId, $userId);
     $orderStmt->execute();
     $orderResult = $orderStmt->get_result();
-    
+
     if ($orderResult->num_rows === 0) {
         // Order not found or doesn't belong to user
         header("Location: index.php");
         exit;
     }
-    
+
     $orderDetails = $orderResult->fetch_assoc();
     $orderStmt->close();
 
@@ -50,12 +50,14 @@ if ($conn) {
     $itemsStmt->bind_param("i", $orderId);
     $itemsStmt->execute();
     $itemsResult = $itemsStmt->get_result();
-    
+
     while ($row = $itemsResult->fetch_assoc()) {
         $orderItems[] = $row;
     }
     $itemsStmt->close();
 }
+
+
 
 // Include header
 include "utils/header.php";
@@ -72,20 +74,39 @@ include "utils/navbar.php";
                 <i class="fa fa-check-circle text-success" style="font-size: 64px;"></i>
                 <h2 class="mt-3">Thank You for Your Order!</h2>
                 <p class="lead">Your order has been placed successfully.</p>
+
+                <?php if (isset($_SESSION['email_sent'])): ?>
+                    <?php if ($_SESSION['email_sent']): ?>
+                        <div class="alert alert-success mt-3">
+                            <i class="fa fa-envelope me-2"></i> A confirmation email has been sent to your email address.
+                        </div>
+                    <?php else: ?>
+                        <div class="alert alert-warning mt-3">
+                            <i class="fa fa-exclamation-triangle me-2"></i> We couldn't send a confirmation email. Please keep
+                            your order number for reference.
+                        </div>
+                    <?php endif; ?>
+                    <?php unset($_SESSION['email_sent']); // Clear the flag ?>
+                <?php endif; ?>
             </div>
 
             <div class="row mb-4">
                 <div class="col-md-6">
                     <h5>Order Information</h5>
                     <p><strong>Order Number:</strong> #<?php echo $orderDetails['order_id']; ?></p>
-                    <p><strong>Order Date:</strong> <?php echo date('F j, Y, g:i a', strtotime($orderDetails['order_date'])); ?></p>
-                    <p><strong>Order Status:</strong> <span class="badge bg-warning"><?php echo ucfirst($orderDetails['order_status']); ?></span></p>
+                    <p><strong>Order Date:</strong>
+                        <?php echo date('F j, Y, g:i a', strtotime($orderDetails['order_date'])); ?></p>
+                    <p><strong>Order Status:</strong> <span
+                            class="badge bg-warning"><?php echo ucfirst($orderDetails['order_status']); ?></span></p>
                 </div>
                 <div class="col-md-6">
                     <h5>Customer Information</h5>
-                    <p><strong>Name:</strong> <?php echo htmlspecialchars($orderDetails['user_firstname'] . ' ' . $orderDetails['user_lastname']); ?></p>
+                    <p><strong>Name:</strong>
+                        <?php echo htmlspecialchars($orderDetails['user_firstname'] . ' ' . $orderDetails['user_lastname']); ?>
+                    </p>
                     <p><strong>Email:</strong> <?php echo htmlspecialchars($orderDetails['user_email']); ?></p>
-                    <p><strong>Delivery Address:</strong> <?php echo htmlspecialchars($orderDetails['order_delivery_address']); ?></p>
+                    <p><strong>Delivery Address:</strong>
+                        <?php echo htmlspecialchars($orderDetails['order_delivery_address']); ?></p>
                 </div>
             </div>
 
@@ -106,17 +127,18 @@ include "utils/navbar.php";
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <?php if (!empty($item['prod_image'])): ?>
-                                            <img src="images/products/<?php echo $item['prod_image']; ?>" 
-                                                 alt="<?php echo htmlspecialchars($item['prod_name']); ?>" 
-                                                 class="me-2" style="width: 50px; height: 50px; object-fit: cover;">
+                                            <img src="images/products/<?php echo $item['prod_image']; ?>"
+                                                alt="<?php echo htmlspecialchars($item['prod_name']); ?>" class="me-2"
+                                                style="width: 50px; height: 50px; object-fit: cover;">
                                         <?php else: ?>
-                                            <img src="images/product-placeholder.png" alt="Product placeholder" 
-                                                 class="me-2" style="width: 50px; height: 50px; object-fit: cover;">
+                                            <img src="images/product-placeholder.png" alt="Product placeholder" class="me-2"
+                                                style="width: 50px; height: 50px; object-fit: cover;">
                                         <?php endif; ?>
                                         <?php echo htmlspecialchars($item['prod_name']); ?>
                                     </div>
                                 </td>
-                                <td>$<?php echo number_format($item['prod_subtotal'] / $item['prod_item_quantity'], 2); ?></td>
+                                <td>$<?php echo number_format($item['prod_subtotal'] / $item['prod_item_quantity'], 2); ?>
+                                </td>
                                 <td><?php echo $item['prod_item_quantity']; ?></td>
                                 <td class="text-end">$<?php echo number_format($item['prod_subtotal'], 2); ?></td>
                             </tr>
