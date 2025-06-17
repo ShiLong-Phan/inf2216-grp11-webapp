@@ -58,31 +58,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
-          extensions: mbstring, intl, mysqli, pdo_mysql
+          extensions: mbstring, intl, mysqli, pdo_mysql, curl
+      
+      - name: Install PHPMailer (missing dependency)
+        run: |
+          # Since we need to add PHPMailer but keep the lock file consistent
+          # We'll do a specific install just for the vulnerability scan
+          composer require phpmailer/phpmailer:^6.8 --no-update
       
       - name: Install Composer dependencies
         run: |
-          if [ -f "composer.json" ]; then
-            composer install --no-progress --prefer-dist --optimize-autoloader
-          else
-            echo "No composer.json found, creating minimal file for dependency analysis"
-            echo '{
-              "name": "inf2216-grp11/webapp",
-              "description": "Crumbly - A secure web application",
-              "require": {
-                "php": ">=8.0",
-                "phpmailer/phpmailer": "^6.8",
-                "stripe/stripe-php": "^10.0"
-              }
-            }' > composer.json
-            composer install --no-progress --prefer-dist --optimize-autoloader
-          fi
+          # Use the existing lock file to ensure consistency
+          composer install --no-progress --prefer-dist --optimize-autoloader --no-dev
       
       - name: OWASP Dependency Check
         uses: dependency-check/Dependency-Check_Action@main
@@ -90,10 +83,11 @@ jobs:
           project: 'inf2216-grp11-webapp'
           path: '.'
           format: 'HTML'
-          out: 'reports' # Report output directory
+          out: 'reports'
           args: >
             --scan composer.json
             --scan composer.lock
+            --scan vendor
             --enableExperimental
             --suppression suppression.xml
       
@@ -106,20 +100,20 @@ jobs:
           fi
       
       - name: Upload dependency check report
-        uses: actions/upload-artifact@v4  # Updated to v4
+        uses: actions/upload-artifact@v4
         with:
           name: dependency-check-report
           path: reports
       
       - name: Check for high-severity vulnerabilities
         run: |
-          if grep -q "CRITICAL\|HIGH" reports/dependency-check-report.html; then
+          if [ -f "reports/dependency-check-report.html" ] && grep -q "CRITICAL\|HIGH" reports/dependency-check-report.html; then
             echo "⚠️ HIGH OR CRITICAL VULNERABILITIES FOUND! Review the dependency check report."
             echo "This is set to not fail the build, but should be reviewed before production deployment."
           else
             echo "✅ No high or critical vulnerabilities found."
           fi
-  
+          
   build-test:
     name: Build & Test Docker Environment
     runs-on: ubuntu-latest
