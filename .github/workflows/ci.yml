@@ -61,7 +61,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       
-      - name: Setup Docker Buildx
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       
       - name: Install Docker Compose
@@ -72,31 +72,73 @@ jobs:
       
       - name: Build Docker images
         run: |
+          # Create any missing directories that might be needed
+          mkdir -p certbot/www
+          mkdir -p certbot/renewal-hooks/post
+          
+          # Create a placeholder SSL certificate for local testing
+          mkdir -p ssl
+          openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout ssl/nginx-selfsigned.key \
+            -out ssl/nginx-selfsigned.crt \
+            -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
+          
+          # Build the images without starting the services
           docker-compose build
+          
+          # List images to verify build
+          echo "Listing all docker images:"
+          docker images
+          
+          # Verify PHP image exists
+          PHP_IMAGE_NAME="$(docker images --format '{{.Repository}}:{{.Tag}}' | grep '_php' | head -n1)"
+          if [ -z "$PHP_IMAGE_NAME" ]; then
+            echo "Could not find PHP image, trying alternate pattern..."
+            PHP_IMAGE_NAME="$(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'inf2216.*php' | head -n1)"
+          fi
+          
+          if [ -z "$PHP_IMAGE_NAME" ]; then
+            echo "Error: PHP image not found!"
+            exit 1
+          else
+            echo "PHP image found: $PHP_IMAGE_NAME"
+          fi
       
-      - name: Run Docker Compose
+      - name: Start containers
         run: |
-          docker-compose up -d
-      
-      - name: Wait for services to start
-        run: sleep 15
+          # Start only essential services for testing
+          docker-compose up -d php db web
+          
+          # Give services time to initialize
+          sleep 20
       
       - name: Check container status
         run: |
-          docker ps
+          docker ps -a
           docker-compose ps
       
       - name: Check web server availability
         run: |
-          curl -I http://localhost || true
+          # Try to connect to web server
+          curl -k https://localhost:443 || echo "Could not connect to HTTPS, which is expected in CI environment"
+          curl -I http://localhost:80 || echo "Could not connect to HTTP, which is expected in CI environment"
       
-      - name: Check for container errors
+      - name: Check PHP service
+        run: |
+          # Create a test PHP file
+          echo "<?php echo 'PHP is working!'; ?>" > app/test.php
+          
+          # Try to access it via the web service
+          docker exec -it $(docker ps -qf name=php) php -v
+          docker exec -it $(docker ps -qf name=php) php /var/www/html/test.php
+      
+      - name: Check logs for errors
         run: |
           docker-compose logs
       
       - name: Clean up
         run: |
-          docker-compose down
+          docker-compose down -v
           docker system prune -af --volumes
   
   notify:

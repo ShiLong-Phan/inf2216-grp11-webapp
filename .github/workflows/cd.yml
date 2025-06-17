@@ -32,7 +32,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Build and push Docker images
+      - name: Build Docker images
         run: |
           # Get lowercase repository name
           REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
@@ -40,13 +40,32 @@ jobs:
           # Build images
           docker-compose build
           
-          # Tag images for GitHub Container Registry with lowercase repository name
-          docker tag inf2216-grp11-webapp_php:latest ghcr.io/${REPO_LOWERCASE}/crumbly-php:latest
-          docker tag inf2216-grp11-webapp_php:latest ghcr.io/${REPO_LOWERCASE}/crumbly-php:${{ github.sha }}
+          # Debug info
+          echo "Listing all docker images:"
+          docker images
           
-          # Push images to registry
-          docker push ghcr.io/${REPO_LOWERCASE}/crumbly-php:latest
-          docker push ghcr.io/${REPO_LOWERCASE}/crumbly-php:${{ github.sha }}
+          # We need to tag the php image specifically
+          PHP_IMAGE_NAME="$(docker images --format '{{.Repository}}:{{.Tag}}' | grep '_php' | head -n1)"
+          if [ -z "$PHP_IMAGE_NAME" ]; then
+            echo "Could not find PHP image, trying to find it by specific naming pattern..."
+            PHP_IMAGE_NAME="$(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'inf2216.*php' | head -n1)"
+          fi
+          
+          echo "Found PHP image: $PHP_IMAGE_NAME"
+          
+          # Tag and push only if image was found
+          if [ ! -z "$PHP_IMAGE_NAME" ]; then
+            # Tag images for GitHub Container Registry with lowercase repository name
+            docker tag $PHP_IMAGE_NAME ghcr.io/${REPO_LOWERCASE}/crumbly-php:latest
+            docker tag $PHP_IMAGE_NAME ghcr.io/${REPO_LOWERCASE}/crumbly-php:${{ github.sha }}
+            
+            # Push images to registry
+            docker push ghcr.io/${REPO_LOWERCASE}/crumbly-php:latest
+            docker push ghcr.io/${REPO_LOWERCASE}/crumbly-php:${{ github.sha }}
+          else
+            echo "Error: PHP image not found!"
+            exit 1
+          fi
       
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.0
@@ -62,7 +81,7 @@ jobs:
             cd /path/to/your/app
             
             # Backup the database
-            docker exec $(docker ps -qf name=db) sh -c 'exec mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" ssdgroup11db' > /var/backups/crumbly/db-backup-$(date +%Y%m%d-%H%M%S).sql || echo "Database backup failed, continuing deployment"
+            docker exec $(docker ps -qf name=db) sh -c 'exec mysqldump -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE' > /var/backups/crumbly/db-backup-$(date +%Y%m%d-%H%M%S).sql || echo "Database backup failed, continuing deployment"
             
             # Pull the latest code
             git pull origin main
