@@ -106,6 +106,6 @@ jobs:
             docker-compose ps
             
             # Clean up unused resources
-            docker system prune -af --volumes
+            docker system prune -a -f --volumes
             
             echo "Deployment completed successfully"

@@ -142,7 +142,7 @@ jobs:
       - name: Clean up
         run: |
           docker-compose down -v
-          docker system prune -af --volumes
+          docker system prune -a -f --volumes
   
   notify:
     name: Notification
