@@ -124,9 +124,12 @@ jobs:
       
       - name: Check PHP service
         run: |
-          # Create a test PHP file
-          echo "<?php echo 'PHP is working!'; ?>" > app/test.php
-          
+          echo "<?php
+          // Test PHP file for service check
+          echo 'PHP Service is running';
+          phpinfo();
+          ?>" > test.php
+                    
           # Try to access it via the web service
           docker exec -it $(docker ps -qf name=php) php -v
           docker exec -it $(docker ps -qf name=php) php /var/www/html/test.php || echo "Could not execute PHP test file"
