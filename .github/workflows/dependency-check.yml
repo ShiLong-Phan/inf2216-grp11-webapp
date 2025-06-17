@@ -1,24 +1,7 @@
 name: OWASP Dependency Check
 
 on:
-  # Run on schedule (weekly)
-  schedule:
-    - cron: '0 0 * * 0'  # Run at midnight every Sunday
-  
-  # Allow manual trigger
-  workflow_dispatch:
-  
-  # Run on specific events (optional)
-  push:
-    branches: [ main ]
-    paths:
-      - 'composer.json'
-      - 'composer.lock'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'composer.json'
-      - 'composer.lock'
+    [push, pull_request]
 
 jobs:
   dependency-check:
