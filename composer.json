@@ -1,5 +1,33 @@
 {
+    "name": "inf2216-grp11/webapp",
+    "description": "Crumbly - A secure baking e-commerce web application",
+    "type": "project",
+    "license": "proprietary",
     "require": {
+        "php": ">=8.0",
+        "phpmailer/phpmailer": "^6.8",
+        "ext-mysqli": "*",
+        "ext-json": "*",
         "stripe/stripe-php": "^17.3"
+
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "files": [
+            "app/utils/dbconnect.php",
+            "app/utils/functions.php"
+        ]
+    },
+    "scripts": {
+        "test": "phpunit --testdox",
+        "check-syntax": "find ./app -name \"*.php\" -exec php -l {} \\;",
+        "security-check": "grep -r \"eval\\\\(\" ./app || echo \"No eval() found\" && grep -r \"system\\\\(\" ./app || echo \"No system() found\""
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
     }
 }
