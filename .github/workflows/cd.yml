@@ -107,4 +107,4 @@ jobs:
             # Clean up unused resources
             docker system prune -af --volumes
             
-            echo "Deployment completed successfully"
+            echo "
