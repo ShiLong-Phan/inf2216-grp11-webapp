@@ -66,12 +66,6 @@ jobs:
           php-version: '8.1'
           extensions: mbstring, intl, mysqli, pdo_mysql, curl
       
-      - name: Install PHPMailer (missing dependency)
-        run: |
-          # Since we need to add PHPMailer but keep the lock file consistent
-          # We'll do a specific install just for the vulnerability scan
-          composer require phpmailer/phpmailer:^6.8 --no-update
-      
       - name: Install Composer dependencies
         run: |
           # Use the existing lock file to ensure consistency

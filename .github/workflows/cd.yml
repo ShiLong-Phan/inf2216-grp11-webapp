@@ -82,7 +82,7 @@ jobs:
             mkdir -p /var/backups/crumbly
             
             # Navigate to application directory
-            cd /path/to/your/app
+            cd /app
             
             # Backup the database
             docker exec $(docker ps -qf name=db) sh -c 'exec mysqldump -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE' > /var/backups/crumbly/db-backup-$(date +%Y%m%d-%H%M%S).sql || echo "Database backup failed, continuing deployment"
