@@ -1,3 +1,4 @@
+# .github/workflows/cd.yml
 name: Continuous Deployment
 
 on:
@@ -15,6 +16,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.17.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+      
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
@@ -23,13 +33,20 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}/crumbly-php:latest
-            ghcr.io/${{ github.repository }}/crumbly-php:${{ github.sha }}
+        run: |
+          # Get lowercase repository name
+          REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          
+          # Build images
+          docker-compose build
+          
+          # Tag images for GitHub Container Registry with lowercase repository name
+          docker tag inf2216-grp11-webapp_php:latest ghcr.io/${REPO_LOWERCASE}/crumbly-php:latest
+          docker tag inf2216-grp11-webapp_php:latest ghcr.io/${REPO_LOWERCASE}/crumbly-php:${{ github.sha }}
+          
+          # Push images to registry
+          docker push ghcr.io/${REPO_LOWERCASE}/crumbly-php:latest
+          docker push ghcr.io/${REPO_LOWERCASE}/crumbly-php:${{ github.sha }}
       
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.0
@@ -41,17 +58,30 @@ jobs:
             # Create a backup directory if it doesn't exist
             mkdir -p /var/backups/crumbly
             
-            # Backup the database
+            # Navigate to application directory
             cd /path/to/your/app
-            docker exec $(docker ps -qf name=db) sh -c 'exec mysqldump -u root -p"$pass" ssdgroup11db' > /var/backups/crumbly/db-backup-$(date +%Y%m%d-%H%M%S).sql
+            
+            # Backup the database
+            docker exec $(docker ps -qf name=db) sh -c 'exec mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" ssdgroup11db' > /var/backups/crumbly/db-backup-$(date +%Y%m%d-%H%M%S).sql || echo "Database backup failed, continuing deployment"
             
             # Pull the latest code
             git pull origin main
+            
+            # Install Docker Compose if not present
+            if ! command -v docker-compose &> /dev/null; then
+              curl -L "https://github.com/docker/compose/releases/download/v2.17.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              chmod +x /usr/local/bin/docker-compose
+            fi
             
             # Update the application
             docker-compose pull
             docker-compose down
             docker-compose up -d
             
+            # Check if containers are running
+            docker-compose ps
+            
             # Clean up unused resources
             docker system prune -af --volumes
+            
+            echo "Deployment completed successfully"
