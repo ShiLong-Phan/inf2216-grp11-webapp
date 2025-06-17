@@ -129,11 +129,11 @@ jobs:
           echo 'PHP Service is running';
           phpinfo();
           ?>" > test.php
-                    
-          # Try to access it via the web service
-          docker exec -it $(docker ps -qf name=php) php -v
-          docker exec -it $(docker ps -qf name=php) php /var/www/html/test.php || echo "Could not execute PHP test file"
-      
+                      
+          # Try to access it via the web service without requiring TTY
+          docker exec $(docker ps -qf name=php) php -v
+          docker exec $(docker ps -qf name=php) php /var/www/html/test.php || echo "Could not execute PHP test file"
+          
       - name: Check logs for errors
         run: |
           docker-compose logs
