@@ -467,7 +467,7 @@ $orders_result = $conn->query($orders_sql);
                                                     <th class="px-4 py-3">Category</th>
                                                     <th class="px-4 py-3">Price</th>
                                                     <th class="px-4 py-3">Stock</th>
-                                                    <th class="px-4 py-3">Date Added</th>
+                                                    <th class="px-4 py-3">Date</th>
                                                     <th class="px-4 py-3">Actions</th>
                                                 </tr>
                                                 </thead>
@@ -957,6 +957,20 @@ $orders_result = $conn->query($orders_sql);
         };
         reader.readAsDataURL(event.target.files[0]);
     }
+
+    // Auto-hide success alert after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const successAlert = document.getElementById('successAlert');
+        if (successAlert) {
+            setTimeout(function() {
+                successAlert.style.transition = 'opacity 0.5s ease-out';
+                successAlert.style.opacity = '0';
+                setTimeout(function() {
+                    successAlert.remove();
+                }, 500);
+            }, 5000); // Hide after 5 seconds
+        }
+    });
     </script>
 
     <script src="js/jquery-1.11.0.min.js"></script>
