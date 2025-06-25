@@ -35,8 +35,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $prod_description = sanitizeInput($_POST['prod_description']);
             $prod_price = floatval($_POST['prod_price']);
             $prod_category = sanitizeInput($_POST['prod_category']);
-            $prod_image = sanitizeInput($_POST['prod_image']);
             $prod_stock = intval($_POST['prod_stock']);
+
+            $prod_image = 'images/product-placeholder.png'; // Default fallback
+
+            if (isset($_FILES['prod_image']) && $_FILES['prod_image']['error'] === UPLOAD_ERR_OK) {
+                $upload_dir = 'images/';
+
+                // Ensure the upload dir exists
+                if (!is_dir($upload_dir)) {
+                    mkdir($upload_dir, 0777, true);
+                }
+
+                $original_name = basename($_FILES['prod_image']['name']);
+                $extension = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
+
+                // Sanitize the filename (remove spaces, special chars, etc.)
+                $safe_name = preg_replace("/[^a-zA-Z0-9_\-\.]/", "_", pathinfo($original_name, PATHINFO_FILENAME));
+                $unique_filename = $safe_name . '_' . uniqid() . '.' . $extension;
+
+                $target_file = $upload_dir . $unique_filename;
+
+                // Allow only image file types
+                $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                $mime = mime_content_type($_FILES['prod_image']['tmp_name']);
+
+                if (in_array($extension, $allowed_types) && strpos($mime, 'image/') === 0) {
+                    if (move_uploaded_file($_FILES['prod_image']['tmp_name'], $target_file)) {
+                        $prod_image = $target_file;
+                    } else {
+                        $errors[] = "Error uploading image. Please try again.";
+                    }
+                } else {
+                    $errors[] = "Invalid image type. Only JPG, PNG, GIF, and WEBP are allowed.";
+                }
+            }
             
             // Validate product data
             if (empty($prod_name)) {
@@ -85,8 +118,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $prod_description = sanitizeInput($_POST['prod_description']);
             $prod_price = floatval($_POST['prod_price']);
             $prod_category = sanitizeInput($_POST['prod_category']);
-            $prod_image = sanitizeInput($_POST['prod_image']);
             $prod_stock = intval($_POST['prod_stock']);
+
+            $get_stmt = $conn->prepare("SELECT prod_image FROM products WHERE prod_id = ?");
+            $get_stmt->bind_param("i", $prod_id);
+            $get_stmt->execute();
+            $get_stmt->bind_result($existing_image);
+            $get_stmt->fetch();
+            $get_stmt->close();
+
+            // Store this flag
+            $delete_old = false;
+
+            $prod_image = $existing_image; // Use existing image as default
+
+            if (isset($_FILES['prod_image']) && $_FILES['prod_image']['error'] === UPLOAD_ERR_OK) {
+                $upload_dir = 'images/';
+
+                // Ensure the upload dir exists
+                if (!is_dir($upload_dir)) {
+                    mkdir($upload_dir, 0777, true);
+                }
+
+                $original_name = basename($_FILES['prod_image']['name']);
+                $extension = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
+
+                // Sanitize the filename (remove spaces, special chars, etc.)
+                $safe_name = preg_replace("/[^a-zA-Z0-9_\-\.]/", "_", pathinfo($original_name, PATHINFO_FILENAME));
+                $unique_filename = $safe_name . '_' . uniqid() . '.' . $extension;
+
+                $target_file = $upload_dir . $unique_filename;
+
+                // Allow only image file types
+                $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                $mime = mime_content_type($_FILES['prod_image']['tmp_name']);
+
+                if (in_array($extension, $allowed_types) && strpos($mime, 'image/') === 0) {
+                    if (move_uploaded_file($_FILES['prod_image']['tmp_name'], $target_file)) {
+                        // Delete old image if it's not the placeholder
+                        if (!empty($existing_image) && $existing_image !== 'images/product-placeholder.png' && file_exists($existing_image)) {
+                            unlink($existing_image); // delete the old file
+                        }
+                        $prod_image = $target_file;
+                    } else {
+                        $errors[] = "Error uploading image. Please try again.";
+                    }
+                } else {
+                    $errors[] = "Invalid image type. Only JPG, PNG, GIF, and WEBP are allowed.";
+                }
+            }
             
             // Validate product data
             if (empty($prod_name)) {
@@ -109,9 +189,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errors[] = "Product price can only have up to 2 decimal places";
             }
             
-            if (empty($prod_category)) {
-                $errors[] = "Product category is required";
-            }
             if (empty($prod_category)) {
                 $errors[] = "Product category is required";
             }
@@ -355,9 +432,18 @@ $orders_result = $conn->query($orders_sql);
                                                         <input type="number" min="0" class="form-control" name="prod_stock" id="prod_stock" value="0" required>
                                                         <div class="form-text">Number of items in stock</div>
                                                     </div>
-                                                    <div class="col-md-6">
-                                                        <label for="prod_image" class="form-label">Image URL</label>
-                                                        <input type="text" class="form-control" name="prod_image" id="prod_image">
+                                                    <div class="col-12">
+                                                        <label for="prod_image_add" class="form-label">Product Image</label>
+                                                        <div class="border border-primary border-2 rounded p-4 text-center">
+                                                            <div id="preview_container_add" class="mb-3" style="display: none;">
+                                                                <img id="preview_add" src="" alt="Image preview" class="img-fluid rounded shadow-sm" style="max-height: 100px;">
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label for="prod_image_add" class="btn btn-primary btn-sm px-4">Choose Image File</label>
+                                                                <input type="file" class="d-none" name="prod_image" id="prod_image_add" accept="image/*" onchange="previewImageAdd(event)">
+                                                            </div>
+                                                            <small class="text-muted d-block mt-2">Drag and drop or click to select. Supported: JPG, PNG, GIF, WEBP</small>
+                                                        </div>
                                                     </div>
                                                     </div>
                                                     <div class="modal-footer">
@@ -459,8 +545,8 @@ $orders_result = $conn->query($orders_sql);
                                                                     tabindex="-1"
                                                                     aria-labelledby="editModalLabel_<?php echo $product['prod_id']; ?>"
                                                                     aria-hidden="true">
-                                                                    <div class="modal-dialog">
-                                                                        <form method="POST">
+                                                                    <div class="modal-dialog modal-lg">
+                                                                        <form method="POST" action="" enctype="multipart/form-data">
                                                                             <input type="hidden" name="action" value="edit_product">
                                                                             <input type="hidden" name="prod_id" value="<?php echo $product['prod_id']; ?>">
                                                                             <div class="modal-content">
@@ -469,47 +555,51 @@ $orders_result = $conn->query($orders_sql);
                                                                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                                                 </div>
                                                                                 <div class="modal-body">
-                                                                                    <div class="mb-2">
-                                                                                        <label class="form-label">Product Name</label>
-                                                                                        <input type="text" class="form-control" name="prod_name"
-                                                                                            value="<?php echo htmlspecialchars($product['prod_name']); ?>" required>
-                                                                                    </div>
-                                                                                    <div class="mb-2">
-                                                                                        <label class="form-label">Description</label>
-                                                                                        <textarea class="form-control" name="prod_description" required><?php echo htmlspecialchars($product['prod_description']); ?></textarea>
-                                                                                    </div>
-                                                                                    <div class="row">
+                                                                                    <div class="row g-3">
                                                                                         <div class="col-md-6">
-                                                                                            <div class="mb-2">
-                                                                                                <label class="form-label">Price</label>
-                                                                                                <input type="number" min="0.01" max="999.99" class="form-control" name="prod_price" step="0.01"
-                                                                                                    value="<?php echo $product['prod_price']; ?>" required>
-                                                                                            </div>
+                                                                                            <label class="form-label">Product Name</label>
+                                                                                            <input type="text" class="form-control" name="prod_name"
+                                                                                                value="<?php echo htmlspecialchars($product['prod_name']); ?>" required>
                                                                                         </div>
                                                                                         <div class="col-md-6">
-                                                                                            <div class="mb-2">
-                                                                                                <label class="form-label">Stock Quantity</label>
-                                                                                                <input type="number" min="0" class="form-control" name="prod_stock"
-                                                                                                    value="<?php echo $product['prod_stock']; ?>" required>
+                                                                                            <label class="form-label">Price ($)</label>
+                                                                                            <input type="number" min="0.01" max="999.99" class="form-control" name="prod_price" step="0.01"
+                                                                                                value="<?php echo $product['prod_price']; ?>" required>
+                                                                                        </div>
+                                                                                        <div class="col-12">
+                                                                                            <label class="form-label">Description</label>
+                                                                                            <textarea class="form-control" name="prod_description" rows="3" required><?php echo htmlspecialchars($product['prod_description']); ?></textarea>
+                                                                                        </div>
+                                                                                        <div class="col-md-6">
+                                                                                            <label class="form-label">Category</label>
+                                                                                            <select class="form-control" name="prod_category" required>
+                                                                                                <option value="">Select Category</option>
+                                                                                                <option value="Cakes" <?php echo ($product['prod_category'] == 'Cakes') ? 'selected' : ''; ?>>Cakes</option>
+                                                                                                <option value="Tarts" <?php echo ($product['prod_category'] == 'Tarts') ? 'selected' : ''; ?>>Tarts</option>
+                                                                                                <option value="Cookies" <?php echo ($product['prod_category'] == 'Cookies') ? 'selected' : ''; ?>>Cookies</option>
+                                                                                                <option value="Cupcakes" <?php echo ($product['prod_category'] == 'Cupcakes') ? 'selected' : ''; ?>>Cupcakes</option>
+                                                                                                <option value="Muffins" <?php echo ($product['prod_category'] == 'Muffins') ? 'selected' : ''; ?>>Muffins</option>
+                                                                                                <option value="Puffs" <?php echo ($product['prod_category'] == 'Puffs') ? 'selected' : ''; ?>>Puffs</option>
+                                                                                            </select>
+                                                                                        </div>
+                                                                                        <div class="col-md-6">
+                                                                                            <label class="form-label">Stock Quantity</label>
+                                                                                            <input type="number" min="0" class="form-control" name="prod_stock"
+                                                                                                value="<?php echo $product['prod_stock']; ?>" required>
+                                                                                        </div>
+                                                                                        <div class="col-12">
+                                                                                            <label for="prod_image_edit_<?php echo $product['prod_id']; ?>" class="form-label">Update Product Image</label>
+                                                                                            <div class="border border-primary border-2 rounded p-4 text-center">
+                                                                                                <div id="preview_container_edit_<?php echo $product['prod_id']; ?>" class="mb-3">
+                                                                                                    <img id="preview_edit_<?php echo $product['prod_id']; ?>" src="<?php echo htmlspecialchars($product['prod_image']); ?>" alt="Current image" class="img-fluid rounded shadow-sm" style="max-height: 100px;">
+                                                                                                </div>
+                                                                                                <div class="mb-3">
+                                                                                                    <label for="prod_image_edit_<?php echo $product['prod_id']; ?>" class="btn btn-primary btn-sm px-4">Choose New Image</label>
+                                                                                                    <input type="file" class="d-none" name="prod_image" id="prod_image_edit_<?php echo $product['prod_id']; ?>" accept="image/*" onchange="previewImageEdit(event, <?php echo $product['prod_id']; ?>)">
+                                                                                                </div>
+                                                                                                <small class="text-muted d-block mt-2">Current image shown above. Select new image to replace. Supported: JPG, PNG, GIF, WEBP</small>
                                                                                             </div>
                                                                                         </div>
-                                                                                    </div>
-                                                                                    <div class="mb-2">
-                                                                                        <label class="form-label">Category</label>
-                                                                                        <select class="form-control" name="prod_category" required>
-                                                                                            <option value="">Select Category</option>
-                                                                                            <option value="Cakes" <?php echo ($product['prod_category'] == 'Cakes') ? 'selected' : ''; ?>>Cakes</option>
-                                                                                            <option value="Tarts" <?php echo ($product['prod_category'] == 'Tarts') ? 'selected' : ''; ?>>Tarts</option>
-                                                                                            <option value="Cookies" <?php echo ($product['prod_category'] == 'Cookies') ? 'selected' : ''; ?>>Cookies</option>
-                                                                                            <option value="Cupcakes" <?php echo ($product['prod_category'] == 'Cupcakes') ? 'selected' : ''; ?>>Cupcakes</option>
-                                                                                            <option value="Muffins" <?php echo ($product['prod_category'] == 'Muffins') ? 'selected' : ''; ?>>Muffins</option>
-                                                                                            <option value="Puffs" <?php echo ($product['prod_category'] == 'Puffs') ? 'selected' : ''; ?>>Puffs</option>
-                                                                                        </select>
-                                                                                    </div>
-                                                                                    <div class="mb-2">
-                                                                                        <label class="form-label">Image URL</label>
-                                                                                        <input type="text" class="form-control" name="prod_image"
-                                                                                            value="<?php echo htmlspecialchars($product['prod_image']); ?>">
                                                                                     </div>
                                                                                 </div>
                                                                                 <div class="modal-footer">
@@ -521,6 +611,7 @@ $orders_result = $conn->query($orders_sql);
                                                                     </div>
                                                                 </div>
                                                             </td>
+                                                        </tr>
                                                         <?php endwhile; ?>
                                                     <?php else: ?>
                                                         <tr>
@@ -844,6 +935,28 @@ $orders_result = $conn->query($orders_sql);
             activeBtn.classList.add('active');
         }
     }
+
+    function previewImageAdd(event) {
+        const reader = new FileReader();
+        reader.onload = function () {
+            const output = document.getElementById('preview_add');
+            const container = document.getElementById('preview_container_add');
+            output.src = reader.result;
+            container.style.display = 'block';
+        };
+        reader.readAsDataURL(event.target.files[0]);
+    }
+
+    function previewImageEdit(event, productId) {
+        const reader = new FileReader();
+        reader.onload = function () {
+            const output = document.getElementById('preview_edit_' + productId);
+            const container = document.getElementById('preview_container_edit_' + productId);
+            output.src = reader.result;
+            container.style.display = 'block';
+        };
+        reader.readAsDataURL(event.target.files[0]);
+    }
     </script>
 
     <script src="js/jquery-1.11.0.min.js"></script>
@@ -851,6 +964,7 @@ $orders_result = $conn->query($orders_sql);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
     <script src="js/plugins.js"></script>
     <script src="js/script.js"></script>
+
 </body>
 
 </html>
