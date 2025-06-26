@@ -113,6 +113,11 @@ jobs:
       
       - name: Start containers
         run: |
+          # Start Splunk first and wait for it to be available
+          docker-compose up -d splunk
+          echo "Waiting for Splunk to initialize..."
+          sleep 60  # Give Splunk time to start
+          
           # Start only essential services for testing
           docker-compose up -d php db web
           
