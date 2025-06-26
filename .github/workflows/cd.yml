@@ -118,3 +118,9 @@ jobs:
             docker system prune -a -f --volumes
             
             echo "Deployment completed successfully"
+      - name: Local cleanup
+        if: always()  # Run even if previous steps failed
+        run: |
+          docker-compose down -v || true
+          rm -f .env || true
+          docker system prune -f || true
