@@ -153,9 +153,12 @@ jobs:
       
       - name: Clean up
         run: |
-          rm -f .env
           docker-compose down -v
+          rm -f .env
+          rm -f docker-compose.override.yml
           docker system prune -a -f --volumes
+
+
   
   notify:
     name: Notification
