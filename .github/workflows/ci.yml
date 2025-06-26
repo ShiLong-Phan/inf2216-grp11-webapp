@@ -74,10 +74,12 @@ jobs:
       - name: Build Docker images
         run: |
           # Set environment variables for Docker Compose
-          echo "SPLUNK_HEC_BUNKERTOKEN=${{ secrets.SPLUNK_HEC_BUNKERTOKEN }}" >> $GITHUB_ENV
-          echo "SPLUNK_HEC_FAIL2BANTOKEN=${{ secrets.SPLUNK_HEC_FAIL2BANTOKEN }}" >> $GITHUB_ENV
-          echo "SPLUNK_HEC_NGINXTOKEN=${{ secrets.SPLUNK_HEC_NGINXTOKEN }}" >> $GITHUB_ENV
-          echo "SPLUNK_PASSWORD=${{ secrets.SPLUNK_PASSWORD }}" >> $GITHUB_ENV
+          cat > .env << EOL
+          SPLUNK_HEC_BUNKERTOKEN=${{ secrets.SPLUNK_HEC_BUNKERTOKEN }}
+          SPLUNK_HEC_FAIL2BANTOKEN=${{ secrets.SPLUNK_HEC_FAIL2BANTOKEN }}
+          SPLUNK_HEC_NGINXTOKEN=${{ secrets.SPLUNK_HEC_NGINXTOKEN }}
+          SPLUNK_PASSWORD=${{ secrets.SPLUNK_PASSWORD }}
+          EOL
           # Create any missing directories that might be needed
           mkdir -p certbot/www
           mkdir -p certbot/renewal-hooks/post
@@ -146,6 +148,7 @@ jobs:
       
       - name: Clean up
         run: |
+          rm -f .env
           docker-compose down -v
           docker system prune -a -f --volumes
   
