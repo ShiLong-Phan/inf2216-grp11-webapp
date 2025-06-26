@@ -40,10 +40,13 @@ jobs:
       - name: Build Docker images
         run: |
           # Set environment variables for Docker Compose
-          echo "SPLUNK_HEC_BUNKERTOKEN=${{ secrets.SPLUNK_HEC_BUNKERTOKEN }}" >> $GITHUB_ENV
-          echo "SPLUNK_HEC_FAIL2BANTOKEN=${{ secrets.SPLUNK_HEC_FAIL2BANTOKEN }}" >> $GITHUB_ENV
-          echo "SPLUNK_HEC_NGINXTOKEN=${{ secrets.SPLUNK_HEC_NGINXTOKEN }}" >> $GITHUB_ENV
-          echo "SPLUNK_PASSWORD=${{ secrets.SPLUNK_PASSWORD }}" >> $GITHUB_ENV
+          cat > .env << EOL
+          SPLUNK_HEC_BUNKERTOKEN=${{ secrets.SPLUNK_HEC_BUNKERTOKEN }}
+          SPLUNK_HEC_FAIL2BANTOKEN=${{ secrets.SPLUNK_HEC_FAIL2BANTOKEN }}
+          SPLUNK_HEC_NGINXTOKEN=${{ secrets.SPLUNK_HEC_NGINXTOKEN }}
+          SPLUNK_PASSWORD=${{ secrets.SPLUNK_PASSWORD }}
+          EOL
+
           # Get lowercase repository name
           REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           
@@ -111,6 +114,7 @@ jobs:
             docker-compose ps
             
             # Clean up unused resources
+            rm -f .env
             docker system prune -a -f --volumes
             
             echo "Deployment completed successfully"
