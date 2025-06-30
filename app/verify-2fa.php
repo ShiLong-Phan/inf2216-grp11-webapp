@@ -35,7 +35,7 @@ if (isset($_GET['token']) && !empty($_GET['token'])) {
             
             if ($update_stmt->execute()) {
                 // Mark token as used
-                $mark_used_sql = "UPDATE auth_tokens SET used = 1, used_at = NOW() WHERE token = ?";
+                $mark_used_sql = "UPDATE auth_tokens SET used = 1, used_at = UTC_TIMESTAMP() WHERE token = ?";
                 $mark_used_stmt = $conn->prepare($mark_used_sql);
                 $mark_used_stmt->bind_param("s", $token);
                 $mark_used_stmt->execute();

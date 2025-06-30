@@ -9,11 +9,11 @@ if (!isset($conn) || !$conn) {
 
 // Check if we have an active OTP verification session
 if (isset($_SESSION['user_id']) && isset($_SESSION['user_email'])) {
-    header("Location: index.php");
+    echo "<script>window.location.href = 'index.php';</script>";
     exit();
 } else if (!isset($_SESSION['temp_user_id']) || !isset($_SESSION['temp_otp_id'])) {
     // No active verification session, redirect to login
-    header("Location: login.php");
+    echo "<script>window.location.href = 'login.php';</script>";
     exit();
 }
 
@@ -28,7 +28,7 @@ function sanitizeInput($data)
 
 // Redirect to verification page if not a POST request
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: verify-otp.php");
+    echo "<script>window.location.href = 'verify-otp.php';</script>";
     exit();
 }
 
@@ -41,8 +41,9 @@ $user_id = $_SESSION['temp_user_id'];
 $otp_id = $_SESSION['temp_otp_id'];
 
 // Check if OTP is valid and not expired
+
 $sql = "SELECT id FROM user_otps 
-        WHERE id = ? AND user_id = ? AND otp_code = ? AND expires_at > NOW() AND is_used = 0";
+        WHERE id = ? AND user_id = ? AND otp_code = ? AND expires_at > UTC_TIMESTAMP() AND is_used = 0";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("iis", $otp_id, $user_id, $entered_otp);
 $stmt->execute();
@@ -72,23 +73,20 @@ if ($result->num_rows === 1) {
     unset($_SESSION['temp_user_role']);
     unset($_SESSION['temp_otp_id']);
 
-    // Regenerate session ID for security
-    session_regenerate_id(true);
-
     // Save session before redirecting
     session_write_close();
 
     // Redirect based on user role
     if ($_SESSION['user_role'] == 1) {
-        header("Location: admin_dashboard.php");
+        echo "<script>window.location.href = 'admin_dashboard.php';</script>";
     } else {
-        header("Location: index.php");
+        echo "<script>window.location.href = 'index.php';</script>";
     }
     exit();
 } else {
     // Check if OTP is expired
     $sql = "SELECT id FROM user_otps 
-            WHERE id = ? AND user_id = ? AND expires_at <= NOW() AND is_used = 0";
+            WHERE id = ? AND user_id = ? AND expires_at <= UTC_TIMESTAMP() AND is_used = 1";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ii", $otp_id, $user_id);
     $stmt->execute();
@@ -96,10 +94,10 @@ if ($result->num_rows === 1) {
 
     if ($result->num_rows === 1) {
         // Redirect back with error
-        header("Location: verify-otp.php?error=expired");
+        echo "<script>window.location.href = 'verify-otp.php?error=expired';</script>";
     } else {
         // Redirect back with error
-        header("Location: verify-otp.php?error=invalid");
+        echo "<script>window.location.href = 'verify-otp.php?error=invalid';</script>";
     }
     exit();
 }
