@@ -28,7 +28,7 @@ if (isset($_GET['token'])) {
 
     // Verify token
     $sql = "SELECT user_id FROM password_reset_tokens 
-            WHERE token = ? AND expires_at > NOW() 
+            WHERE token = ? AND expires_at > UTC_TIMESTAMP() 
             LIMIT 1";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("s", $token);
