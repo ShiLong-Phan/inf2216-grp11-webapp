@@ -43,7 +43,7 @@ $otp_id = $_SESSION['temp_otp_id'];
 // Check if OTP is valid and not expired
 
 $sql = "SELECT id FROM user_otps 
-        WHERE id = ? AND user_id = ? AND otp_code = ? AND expires_at > UTC_TIMESTAMP() AND is_used = 0";
+        WHERE id = ? AND user_id = ? AND otp_code = ? AND expires_at >= UTC_TIMESTAMP() AND is_used = 0";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("iis", $otp_id, $user_id, $entered_otp);
 $stmt->execute();
