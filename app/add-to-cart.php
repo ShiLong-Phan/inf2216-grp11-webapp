@@ -2,6 +2,11 @@
 include "utils/session.php"; // Ensure session is started
 include "utils/dbconnect.php";
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: index.php');
+    exit;
+}
+
 // Check if user is logged in with correct role
 if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] != 0 && $_SESSION['user_role'] != 1)) {
     echo json_encode(['success' => false, 'message' => 'User not logged in or unauthorized']);

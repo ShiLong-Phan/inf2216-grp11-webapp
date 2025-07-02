@@ -209,7 +209,7 @@ foreach ($cartItems as $item) {
                                     <div class="col-6">
                                         <div class="d-flex align-items-center">
                                             <?php if (!empty($item['prod_image'])): ?>
-                                                <img src="images/products/<?php echo $item['prod_image']; ?>"
+                                                <img src="/<?php echo $item['prod_image']; ?>"
                                                     alt="<?php echo htmlspecialchars($item['prod_name']); ?>" 
                                                     class="me-3" style="width: 60px; height: 60px; object-fit: cover;">
                                             <?php else: ?>

@@ -198,13 +198,13 @@ if (isset($_SESSION['user_id'])) {
                             </a>
                         </li>
                         <!-- Add cart link for logged-in users -->
-                        <li class="ms-3">
+                        <!-- <li class="ms-3">
                             <a href="cart.php" class="rounded-circle bg-light p-2 mx-1">
                                 <svg width="24" height="24" viewBox="0 0 24 24">
                                     <use xlink:href="#cart"></use>
                                 </svg>
                             </a>
-                        </li>
+                        </li> -->
                     <?php endif; ?>
                 </ul>
                 <div class="cart text-end d-none d-lg-block dropdown">

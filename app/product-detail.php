@@ -196,11 +196,11 @@ include "utils/navbar.php";
                                         </svg>
                                         Add to Cart
                                     </button>
-                                    <button type="button" class="btn btn-outline-secondary btn-lg">
+                                    <!-- <button type="button" class="btn btn-outline-secondary btn-lg">
                                         <svg width="18" height="18">
                                             <use xlink:href="#heart"></use>
                                         </svg>
-                                    </button>
+                                    </button> -->
                                 <?php else: ?>
                                     <!-- Out of stock message -->
                                     <button type="button" class="btn btn-secondary btn-lg flex-grow-1" disabled>
@@ -219,12 +219,12 @@ include "utils/navbar.php";
                                     </li>
                                 <?php endif; ?>
                                 <li class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Date Added:</span>
-                                    <span><?php echo date('F j, Y', strtotime($product['prod_date_added'])); ?></span>
+                                    <!-- <span class="text-muted">Date Added:</span>
+                                    <span><?php echo date('F j, Y', strtotime($product['prod_date_added'])); ?></span> -->
                                 </li>
                                 <li class="d-flex justify-content-between">
-                                    <span class="text-muted">Product ID:</span>
-                                    <span>#<?php echo $product['prod_id']; ?></span>
+                                    <!-- <span class="text-muted">Product ID:</span>
+                                    <span>#<?php echo $product['prod_id']; ?></span> -->
                                 </li>
                             </ul>
                         </div>
