@@ -472,8 +472,6 @@
               <h2 class="section-title display-4">Get <span class="text-primary">25% Discount</span> on your first
                 purchase</h2>
             </div>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Dictumst amet, metus, sit massa posuere
-              maecenas. At tellus ut nunc amet vel egestas.</p>
           </div>
           <div class="col-md-6 p-5">
             <form>
