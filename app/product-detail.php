@@ -149,7 +149,7 @@ include "utils/navbar.php";
                                         <label for="quantity" class="form-label">Quantity</label>
                                         <div class="input-group product-qty">
                                             <span class="input-group-btn">
-                                                <button type="button" class="quantity-left-minus btn btn-danger btn-number"
+                                                <button type="button" class="quantity-left-minus btn btn-danger"
                                                     data-type="minus">
                                                     <svg width="16" height="16">
                                                         <use xlink:href="#minus"></use>
@@ -162,7 +162,7 @@ include "utils/navbar.php";
                                                 max="<?php echo intval($product['prod_stock']); ?>">
 
                                             <span class="input-group-btn">
-                                                <button type="button" class="quantity-right-plus btn btn-success btn-number"
+                                                <button type="button" class="quantity-right-plus btn btn-success"
                                                     data-type="plus">
                                                     <svg width="16" height="16">
                                                         <use xlink:href="#plus"></use>
