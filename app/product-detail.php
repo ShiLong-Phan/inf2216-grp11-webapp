@@ -105,7 +105,7 @@ include "utils/navbar.php";
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-0 text-center">
                             <?php if (!empty($product['prod_image'])): ?>
-                                <img src="images/products/<?php echo $product['prod_image']; ?>"
+                                <img src="/<?php echo $product['prod_image']; ?>"
                                     alt="<?php echo htmlspecialchars($product['prod_name']); ?>"
                                     class="img-fluid product-detail-img">
                             <?php else: ?>
