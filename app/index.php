@@ -9,9 +9,9 @@
          background-size: cover;
          background-position: center;
          width: 100%;
-         min-height: 600px;
+         min-height: 700px;
          position: relative;
-         padding-top: 40%; /* This creates a responsive aspect ratio */
+         padding-top: 40%;
          margin-bottom: 20px;">
 </section>
 
