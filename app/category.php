@@ -1,19 +1,21 @@
 <?php
-include 'utils/session.php'; ?>
+include 'utils/session.php';
 
-<!DOCTYPE html>
-
-<?php
 // Get the category from URL parameter
 $category = isset($_GET['category']) ? $_GET['category'] : '';
 
 // Validate the category to prevent SQL injection
 $valid_categories = ['Cakes', 'Tarts', 'Cookies', 'Cupcakes', 'Muffins', 'Puffs'];
 if (!in_array($category, $valid_categories)) {
-    header("Location: index.php");
+    // Tell PHP/Nginx “this is a 404” and stop
+    http_response_code(404);
     exit;
 }
+?>
 
+<!DOCTYPE html>
+<html lang="en">
+<?php
 // Include header and navbar
 include 'utils/header.php';
 include 'utils/navbar.php';
