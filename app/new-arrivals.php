@@ -1,5 +1,5 @@
 <?php
-// Include your database connection file
+// Include database connection file
 include_once "utils/dbconnect.php";
 
 // Check if database connection is successful
@@ -77,9 +77,11 @@ if ($result) {
                   
                   <figure>
                     <a href="product-detail.php?id=<?php echo $product['prod_id']; ?>" title="<?php echo htmlspecialchars($product['prod_name']); ?>">
-                      <img src="<?php echo !empty($product['prod_image']) ? 'images/products/' . $product['prod_image'] : 'images/product-placeholder.png'; ?>" 
-                           class="tab-image <?php echo $isOutOfStock ? 'grayscale' : ''; ?>" 
-                           alt="<?php echo htmlspecialchars($product['prod_name']); ?>">
+                      <img src="<?php echo !empty($product['prod_image']) 
+                        ? $product['prod_image'] 
+                        : 'images/product-placeholder.png'; ?>"
+                        class="tab-image <?php echo $isOutOfStock ? 'grayscale' : ''; ?>"
+                        alt="<?php echo htmlspecialchars($product['prod_name']); ?>">
                     </a>
                   </figure>
                   
@@ -87,7 +89,7 @@ if ($result) {
                   <span class="qty">1 Unit</span>
                   <span class="price">$<?php echo number_format($product['prod_price'], 2); ?></span>
                   
-                  <div class="d-flex align-items-center justify-content-between">
+                  <div class="d-flex align-items-center justify-content-center flex-wrap gap-1">
                     <?php if (!$isOutOfStock): ?>
                       <!-- Only show quantity controls and add to cart if in stock -->
                       <div class="input-group product-qty">
@@ -108,15 +110,19 @@ if ($result) {
                         </span>
                       </div>
                       
-                      <?php if (isset($_SESSION['user_id'])): ?>
-                        <a href="#" class="nav-link add-to-cart" data-product-id="<?php echo $product['prod_id']; ?>">
-                          Add to Cart <svg width="16" height="16"><use xlink:href="#cart"></use></svg>
-                        </a>
-                      <?php else: ?>
-                        <a href="login.php" class="nav-link">
-                          Login to Buy <svg width="16" height="16"><use xlink:href="#user"></use></svg>
-                        </a>
-                      <?php endif; ?>
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                      <a href="#" class="add-to-cart nav-link" data-product-id="<?php echo $product['prod_id']; ?>">
+                        <span class="add-to-cart-content">
+                          Add to Cart
+                          <svg width="16" height="16"><use xlink:href="#cart"></use></svg>
+                        </span>
+                      </a>
+                    <?php else: ?>
+                      <a href="login.php" class="nav-link">
+                        Login to Buy
+                        <svg width="16" height="16"><use xlink:href="#user"></use></svg>
+                      </a>
+                    <?php endif; ?>
                     <?php else: ?>
                       <!-- Placeholder div that mimics the appearance of the controls -->
                       <div class="d-flex w-100 justify-content-center">
@@ -151,31 +157,46 @@ if ($result) {
     margin-top: 5px;
   }
   
-  /* Subtle grayscale for image only */
   .grayscale {
     filter: grayscale(50%);
     opacity: 0.9;
   }
+
+  .add-to-cart {
+    display: inline-block;
+    font-size: 0.85rem;
+  }
+
+  .add-to-cart-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .add-to-cart-content svg {
+    flex-shrink: 0;
+    height: 14px;
+    width: 14px;
+  }
+
+  .add-to-cart:hover {
+  text-decoration: underline;
+  }
+  
+  .notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 250px;
+    padding: 15px;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    opacity: 0.9;
+  }
 </style>
 
-<script>
-// Add to cart functionality for new arrivals
-document.addEventListener('DOMContentLoaded', function() {
-  // Quantity buttons functionality
-  const minusButtons = document.querySelectorAll('.products-carousel .quantity-left-minus');
-  const plusButtons = document.querySelectorAll('.products-carousel .quantity-right-plus');
-  
-  minusButtons.forEach(button => {
-    button.addEventListener('click', function() {
-      const input = this.closest('.product-qty').querySelector('input');
-      let value = parseInt(input.value);
-      if (value > 1) {
-        value--;
-        input.value = value;
-      }
-    });
-  });
-  
+<script>  
   plusButtons.forEach(button => {
     button.addEventListener('click', function() {
       const input = this.closest('.product-qty').querySelector('input');
@@ -237,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-remove after 3 seconds
     setTimeout(() => {
       notification.remove();
-    }, 3000);
+    }, 1500);
   }
   
   // Function to update cart display (total, count, etc.)
@@ -248,20 +269,4 @@ document.addEventListener('DOMContentLoaded', function() {
       window.location.reload();
     }, 1000);
   }
-});
 </script>
-
-<style>
-  /* Notification styles */
-  .notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-    min-width: 250px;
-    padding: 15px;
-    border-radius: 4px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    opacity: 0.9;
-  }
-</style>
