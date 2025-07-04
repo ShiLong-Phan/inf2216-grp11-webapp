@@ -1,0 +1,22 @@
+<?php
+http_response_code(404);
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Page Not Found</title>
+  <style>
+    body { text-align: center; font-family: sans-serif; padding: 5rem; }
+    h1 { font-size: 5rem; margin: 0; }
+    p  { font-size: 1.25rem; }
+    a  { color: #007BFF; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h1>404</h1>
+  <p>Sneaky Sneaky! The page you were looking for doesn’t exist la.</p>
+  <p><a href="/">Return home</a></p>
+</body>
+</html>
