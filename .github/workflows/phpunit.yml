@@ -1,4 +1,4 @@
-name: PHPUnit Automated Unit Testing
+name: PHPUnit Tests
 
 on: [push, pull_request]
 
@@ -14,10 +14,17 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.2
-          extensions: mbstring, json, curl
+          extensions: mbstring, json, curl, mysqli
 
-      - name: Install PHP dependencies
+      - name: Install Composer dependencies
         run: composer install --no-progress --prefer-dist
 
-      - name: Run PHPUnit tests
+      - name: Export DB secrets for PHPUnit
+        run: |
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> $GITHUB_ENV
+          echo "DB_USER=${{ secrets.DB_USER }}" >> $GITHUB_ENV
+          echo "DB_PASS=${{ secrets.DB_PASS }}" >> $GITHUB_ENV
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> $GITHUB_ENV
+
+      - name: Run PHPUnit
         run: ./vendor/bin/phpunit --testdox
