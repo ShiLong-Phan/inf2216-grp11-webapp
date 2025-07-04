@@ -57,8 +57,6 @@ if ($conn) {
     $itemsStmt->close();
 }
 
-
-
 // Include header
 include "utils/header.php";
 include "utils/navbar.php";
@@ -126,14 +124,16 @@ include "utils/navbar.php";
                             <tr>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <?php if (!empty($item['prod_image'])): ?>
-                                            <img src="images/products/<?php echo $item['prod_image']; ?>"
-                                                alt="<?php echo htmlspecialchars($item['prod_name']); ?>" class="me-2"
-                                                style="width: 50px; height: 50px; object-fit: cover;">
-                                        <?php else: ?>
-                                            <img src="images/product-placeholder.png" alt="Product placeholder" class="me-2"
-                                                style="width: 50px; height: 50px; object-fit: cover;">
-                                        <?php endif; ?>
+                                    <?php
+                                    // Either the DB path or the placeholder
+                                    $imgSrc = !empty($item['prod_image'])
+                                        ? $item['prod_image']
+                                        : 'images/product-placeholder.png';
+                                    ?>
+                                    <img src="<?php echo htmlspecialchars($imgSrc); ?>"
+                                        alt="<?php echo htmlspecialchars($item['prod_name']); ?>"
+                                        class="me-2"
+                                        style="width:50px; height:50px; object-fit:cover;">
                                         <?php echo htmlspecialchars($item['prod_name']); ?>
                                     </div>
                                 </td>
