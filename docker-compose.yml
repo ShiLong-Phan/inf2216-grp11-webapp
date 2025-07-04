@@ -1,0 +1,126 @@
+services:
+  bunkerweb:
+    image: bunkerity/bunkerweb-all-in-one:1.6.1
+    ports:
+      - "80:8080/tcp"
+      - "443:8443/tcp"
+      - "443:8443/udp" # QUIC
+      # - "8888:7000/tcp"
+    environment:
+      SERVICE_SCHEDULER: "yes"
+      SERVICE_UI: "yes"
+      AUTOCONF_MODE: "no"
+    volumes:
+      - bw-data:/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./bunkerweb-logs:/var/log/bunkerweb
+    networks:
+      - app-network
+  
+  web:
+    image: nginx:stable-alpine
+    # ports:
+    #   - "80:80"
+    #   - "443:443"
+    volumes:
+      - ./nginx/migration.conf:/etc/nginx/conf.d/default.conf
+      - ./app:/var/www/html
+      # - certbot_data:/etc/letsencrypt
+      # - ./certbot/www:/var/www/certbot
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    depends_on:
+      - php
+      - splunk
+      - bunkerweb
+    networks:
+      - app-network
+    logging:
+        driver: "splunk"
+        options:
+          splunk-url: "https://172.20.0.100:8088"
+          splunk-token: "${SPLUNK_HEC_NGINXTOKEN}"
+          splunk-insecureskipverify: "true"
+
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile.php
+    volumes:
+      - ./app:/var/www/html
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    environment:
+      - PHP_MEMORY_LIMIT=256M
+      - PHP_UPLOAD_MAX_FILESIZE=100M
+      - PHP_POST_MAX_SIZE=100M
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+    networks:
+      - app-network
+
+  db:
+    image: mysql:8.0
+    volumes:
+      - db_data:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    networks:
+      - app-network
+
+  splunk:
+    image: splunk/splunk:latest
+    environment:
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_PASSWORD=${SPLUNK_PASSWORD}
+    ports:
+      # - "8888:8000" #Web GUI
+      - "8088:8088" #HEC Token
+      - "9997:9997"
+    volumes:
+      - ./splunk:/opt/splunk/etc
+      - ./splunk/logs:/opt/splunk/var/log/splunk # all splunk logs will be copied into splunk/logs
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    networks:
+      app-network:
+        ipv4_address: 172.20.0.100
+
+  fluentbit:
+    image: fluent/fluent-bit:1.9-debug
+    env_file:
+      - .env
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./bunkerweb-logs:/fluentbit-logs:ro
+      - ./fluentbit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./fluentbit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      - /var/log/fail2ban.log:/fail2ban/fail2ban.log:ro
+    networks:
+      - app-network
+
+
+volumes:
+  db_data:
+  bw-data:
+  # certbot_data:
+
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
