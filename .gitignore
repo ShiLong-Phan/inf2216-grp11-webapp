@@ -1,3 +1,6 @@
 .vscode/sftp.json
 .env
 .DS_Store
+ICT2216-student11.pem
+*.pem
+*.key
