@@ -210,11 +210,8 @@ $category_description = isset($category_descriptions[$category]) ? $category_des
                             });
                             break;
                         case 'newest':
-                            // This would require a date attribute to be added to each product
-                            // For now, we'll just leave it as is
                             break;
                         default:
-                            // Default sorting (we'll use the original order)
                             break;
                     }
 
