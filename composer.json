@@ -4,7 +4,7 @@
   "type": "project",
   "license": "proprietary",
   "require": {
-    "php": ">=5.6.0",
+    "php": "^8.2",
     "stripe/stripe-php": "^17.3.0",
     "ext-curl": "*",
     "ext-json": "*",
