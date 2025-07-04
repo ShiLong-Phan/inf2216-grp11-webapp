@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $original_name = basename($_FILES['prod_image']['name']);
                 $extension = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
 
-                // Sanitize the filename (remove spaces, special chars, etc.)
+                // Sanitize filename 
                 $safe_name = preg_replace("/[^a-zA-Z0-9_\-\.]/", "_", pathinfo($original_name, PATHINFO_FILENAME));
                 $unique_filename = $safe_name . '_' . uniqid() . '.' . $extension;
 
@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($prod_price <= 0) {
                 $errors[] = "Product price must be greater than 0";
             }
-            // ADD THESE PRICE VALIDATIONS
+            // Price validations
             if ($prod_price > 999.99) {
                 $errors[] = "Product price cannot exceed $999.99";
             }
@@ -127,7 +127,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $get_stmt->fetch();
             $get_stmt->close();
 
-            // Store this flag
             $delete_old = false;
 
             $prod_image = $existing_image; // Use existing image as default
@@ -143,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $original_name = basename($_FILES['prod_image']['name']);
                 $extension = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
 
-                // Sanitize the filename (remove spaces, special chars, etc.)
+                // Sanitize filename
                 $safe_name = preg_replace("/[^a-zA-Z0-9_\-\.]/", "_", pathinfo($original_name, PATHINFO_FILENAME));
                 $unique_filename = $safe_name . '_' . uniqid() . '.' . $extension;
 
@@ -155,9 +154,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if (in_array($extension, $allowed_types) && strpos($mime, 'image/') === 0) {
                     if (move_uploaded_file($_FILES['prod_image']['tmp_name'], $target_file)) {
-                        // Delete old image if it's not the placeholder
+                        // Delete old image if not placeholder
                         if (!empty($existing_image) && $existing_image !== 'images/product-placeholder.png' && file_exists($existing_image)) {
-                            unlink($existing_image); // delete the old file
+                            unlink($existing_image); // delete old image file
                         }
                         $prod_image = $target_file;
                     } else {
@@ -178,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($prod_price <= 0) {
                 $errors[] = "Product price must be greater than 0";
             }
-            // ADD THE SAME PRICE VALIDATIONS HERE TOO
+            // Price validations
             if ($prod_price > 999.99) {
                 $errors[] = "Product price cannot exceed $999.99";
             }
@@ -254,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($check_result->num_rows === 0) {
                         $errors[] = "Order not found";
                     } else {
-                        // Update the order status and delivery address
+                        // Update order status and delivery address
                         $sql = "UPDATE orders SET order_status = ?, order_delivery_address = ? WHERE order_id = ?";
                         $stmt = $conn->prepare($sql);
                         $stmt->bind_param("ssi", $order_status, $order_delivery_address, $order_id);
@@ -281,13 +280,6 @@ $orders_sql = "SELECT o.*, u.user_firstname, u.user_lastname, u.user_email
                ORDER BY o.order_date DESC";
 $orders_result = $conn->query($orders_sql);
 
-// Get product categories for dropdown
-// $categories_sql = "SELECT DISTINCT prod_category FROM products ORDER BY prod_category";
-// $categories_result = $conn->query($categories_sql);
-// $categories = [];
-// while ($row = $categories_result->fetch_assoc()) {
-//     $categories[] = $row['prod_category'];
-// }
 ?>
 
 <!DOCTYPE html>
@@ -321,7 +313,6 @@ $orders_result = $conn->query($orders_sql);
         <div class="container-fluid px-0">
             <div class="row justify-content-center">
                 <div class="col-md-12 col-lg-12 col-xl-10">
-                    <!-- Success and error messages -->
                     <?php if (!empty($success_message)): ?>
                         <div class="alert alert-success shadow-sm mb-4" id="successAlert">
                             <div class="d-flex align-items-center">
@@ -334,11 +325,10 @@ $orders_result = $conn->query($orders_sql);
                     <?php endif; ?>
 
                     <?php if (!empty($errors)): ?>
-                        <!-- Your existing error message code here -->
                     <?php endif; ?>
 
                     <div class="row">
-                        <!-- Left side: Admin navigation -->
+                        <!-- Admin navigation -->
                         <div class="col-md-3 col-lg-3 mb-4">
                             <div class="card border-0 shadow-lg rounded-4 overflow-hidden bg-primary text-white" style="box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;">
                                 <div class="card-body p-3">
@@ -498,7 +488,7 @@ $orders_result = $conn->query($orders_sql);
                                                                 <td class="px-4 py-3">
                                                                     <?php 
                                                                     $stock = $product['prod_stock'];
-                                                                    // Determine stock status text
+                                                                    // Stock status
                                                                     if ($stock < 10) {
                                                                         $stockStatus = 'Low Stock';
                                                                     } elseif ($stock <= 50) {
@@ -833,7 +823,7 @@ $orders_result = $conn->query($orders_sql);
                                                                                     </div>
                                                                                     <div class="modal-body">
                                                                                         <div class="row g-3">
-                                                                                            <!-- Customer Info (Read Only) -->
+                                                                                            <!-- Customer Info (read only) -->
                                                                                             <div class="col-md-6">
                                                                                                 <label class="form-label fw-bold">Customer</label>
                                                                                                 <input type="text" 
@@ -843,7 +833,7 @@ $orders_result = $conn->query($orders_sql);
                                                                                                 <small class="text-muted"><?php echo htmlspecialchars($order['user_email']); ?></small>
                                                                                             </div>
                                                                                             
-                                                                                            <!-- Order Total (Read Only) -->
+                                                                                            <!-- Order Total (read only) -->
                                                                                             <div class="col-md-6">
                                                                                                 <label class="form-label fw-bold">Order Total</label>
                                                                                                 <input type="text" 
@@ -921,13 +911,13 @@ $orders_result = $conn->query($orders_sql);
         const sections = document.querySelectorAll('.content-section');
         sections.forEach(sec => sec.style.display = 'none');
 
-        // Show the selected section
+        // Show selected section
         const target = document.getElementById(section + '-section');
         if (target) {
             target.style.display = 'block';
         }
 
-        // Update active button styling
+        // Update active button 
         const buttons = document.querySelectorAll('.nav-btn');
         buttons.forEach(btn => btn.classList.remove('active'));
         const activeBtn = document.querySelector(`button[data-section="${section}"]`);
@@ -968,7 +958,7 @@ $orders_result = $conn->query($orders_sql);
                 setTimeout(function() {
                     successAlert.remove();
                 }, 500);
-            }, 5000); // Hide after 5 seconds
+            }, 5000); 
         }
     });
     </script>
