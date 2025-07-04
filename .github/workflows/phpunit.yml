@@ -3,8 +3,7 @@ name: PHPUnit Automated Unit Testing
 on: [push, pull_request]
 
 jobs:
-  run-tests:
-    name: Run PHPUnit
+  phpunit:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,10 +14,9 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.2
-          extensions: mbstring, curl, json
-          coverage: none
+          extensions: mbstring, json, curl
 
-      - name: Install dependencies
+      - name: Install PHP dependencies
         run: composer install --no-progress --prefer-dist
 
       - name: Run PHPUnit tests
