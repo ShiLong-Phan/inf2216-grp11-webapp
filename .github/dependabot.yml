@@ -1,0 +1,9 @@
+version: 2
+updates:
+  - package-ecosystem: "composer"
+    directory: "/"  # Adjust if your composer.json is in a subdirectory
+    schedule:
+      interval: "daily"  # or "weekly", "monthly"
+    open-pull-requests-limit: 5
+    allow:
+      - dependency-type: "all"
