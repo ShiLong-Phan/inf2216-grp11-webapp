@@ -9,7 +9,11 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 1) {
 }
 
 function sanitizeInput($data) {
-    return htmlspecialchars(trim(stripslashes($data)));
+    $data = trim($data);
+    $data = stripslashes($data);
+    $data = preg_replace('/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi', '', $data);
+    $data = strip_tags($data);  // Remove HTML tags instead of encoding them
+    return $data;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

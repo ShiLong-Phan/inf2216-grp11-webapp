@@ -16,7 +16,8 @@ function sanitizeInput($data)
 {
     $data = trim($data);
     $data = stripslashes($data);
-    $data = htmlspecialchars($data);
+    $data = preg_replace('/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi', '', $data);
+    $data = strip_tags($data);  // Remove HTML tags instead of encoding ;
     return $data;
 }
 
