@@ -17,7 +17,6 @@
     ]
   },
   "scripts": {
-    "test": "phpunit --testdox",
     "check-syntax": "find ./app -name \"*.php\" -exec php -l {} \\;",
     "security-check": "grep -r \"eval\\\\(\" ./app || echo \"No eval() found\" && grep -r \"system\\\\(\" ./app || echo \"No system() found\""
   },
