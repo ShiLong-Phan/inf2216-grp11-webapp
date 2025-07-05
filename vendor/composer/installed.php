@@ -1,28 +1,28 @@
 <?php return array(
     'root' => array(
-        'name' => '__root__',
+        'name' => 'inf2216-grp11/webapp',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'abb6d83d5a60ec2731e507546a2ef99acf2901e3',
-        'type' => 'library',
+        'reference' => 'dc2f6294e5ea95dc517785f3e4a0e503d158905a',
+        'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
         'dev' => true,
     ),
     'versions' => array(
-        '__root__' => array(
+        'inf2216-grp11/webapp' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'abb6d83d5a60ec2731e507546a2ef99acf2901e3',
-            'type' => 'library',
+            'reference' => 'dc2f6294e5ea95dc517785f3e4a0e503d158905a',
+            'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
             'dev_requirement' => false,
         ),
         'stripe/stripe-php' => array(
-            'pretty_version' => 'v17.3.0',
-            'version' => '17.3.0.0',
-            'reference' => 'cfe8244f7e5f910b7fdb5c2cf77428c0acbb9f7c',
+            'pretty_version' => 'v17.4.0',
+            'version' => '17.4.0.0',
+            'reference' => '893946057e43b145826b0dfd7f398673e381e2ae',
             'type' => 'library',
             'install_path' => __DIR__ . '/../stripe/stripe-php',
             'aliases' => array(),
