@@ -1,5 +1,5 @@
 <?php
-session_start();
+include "utils/session.php";
 
 $_SESSION = array();
 if (ini_get('session.cookie_lifetime')) {

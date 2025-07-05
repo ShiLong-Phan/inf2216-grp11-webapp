@@ -1,5 +1,5 @@
 <?php
-session_start();
+include "utils/session.php";
 
 // Check if database connection is missing
 if (!isset($conn) || !$conn) {
@@ -149,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Redirect to login page
             $_SESSION['registration_success'] = true;
-            header(header: "Location: login.php");
+            header("Location: login.php");
             exit();
         } else {
             $errors[] = "Registration failed: " . $conn->error;
