@@ -15,8 +15,8 @@ http_response_code(404);
   </style>
 </head>
 <body>
-  <h1>404</h1>
-  <p>Sneaky Sneaky! The page you were looking for doesn’t exist la.</p>
+  <h1>400 page</h1>
+  <p>Sneaky Sneaky! The page you were looking for doesn’t exist!</p>
   <p><a href="/">Return home</a></p>
 </body>
 </html>
