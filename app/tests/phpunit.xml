@@ -9,6 +9,11 @@
             <directory>unittests</directory>
         </testsuite>
     </testsuites>
+    <testsuites>
+        <testsuite name="Integration Tests">
+            <directory>integrationtests</directory>
+        </testsuite>
+    </testsuites>
     <coverage cacheDirectory="../.phpunit.cache/code-coverage">
         <include>
             <directory suffix=".php">..</directory>
