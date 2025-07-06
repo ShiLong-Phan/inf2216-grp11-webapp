@@ -1,5 +1,5 @@
 <?php
-session_start();
+include "utils/session.php";
 
 // Check if database connection is missing
 if (!isset($conn) || !$conn) {
