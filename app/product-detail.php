@@ -4,7 +4,8 @@ include "utils/session.php";
 
 // Check if product ID is provided
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-    header("Location: index.php");
+    // header("Location: index.php");
+    http_response_code(404); // Bad Request
     exit;
 }
 
@@ -26,7 +27,8 @@ if ($conn) {
 
     if ($result->num_rows === 0) {
         // Product not found
-        header("Location: index.php");
+        // header("Location: index.php");
+        http_response_code(404);
         exit;
     }
 
