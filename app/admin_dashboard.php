@@ -13,7 +13,7 @@ function sanitizeInput($data)
     $data = trim($data);
     $data = stripslashes($data);
     $data = preg_replace('/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi', '', $data);
-    $data = strip_tags($data);  // Remove HTML tags instead of encoding them
+    $data = strip_tags($data);
     return $data;
 }
 
@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($prod_price < 0.01) {
                 $errors[] = "Product price must be at least $0.01";
             }
-            // Check for too many decimal places
+            // Check for decimal places
             if (round($prod_price, 2) != $prod_price) {
                 $errors[] = "Product price can only have up to 2 decimal places";
             }
@@ -949,7 +949,7 @@ $orders_result = $conn->query($orders_sql);
         reader.readAsDataURL(event.target.files[0]);
     }
 
-    // Auto-hide success alert after 5 seconds
+    // Hide success alert after 5 seconds
     document.addEventListener('DOMContentLoaded', function() {
         const successAlert = document.getElementById('successAlert');
         if (successAlert) {
