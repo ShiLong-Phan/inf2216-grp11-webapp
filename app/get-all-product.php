@@ -208,16 +208,7 @@ if (empty($all_products)) {
         }
     });
 
-    // Log all products to console for debugging
-    console.log('All Products:', <?php echo json_encode($all_products); ?>);
-    console.log('Products by Category:', <?php echo json_encode($categories); ?>);
 
-    // Show database connection status in console
-    console.log('Database connection status: Success');
-    console.log('Total products found: <?php echo count($all_products); ?>');
-    <?php foreach ($categories as $category => $products): ?>
-        console.log('Category "<?php echo $category; ?>": <?php echo count($products); ?> products');
-    <?php endforeach; ?>
 
 </script>
 
