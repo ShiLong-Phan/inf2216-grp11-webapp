@@ -123,17 +123,6 @@ include "utils/navbar.php";
                     <div class="ps-md-4">
                         <h1 class="mb-3"><?php echo htmlspecialchars($product['prod_name']); ?></h1>
 
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rating me-2">
-                                <?php for ($i = 0; $i < 5; $i++): ?>
-                                    <svg class="text-warning" width="16" height="16">
-                                        <use xlink:href="#star"></use>
-                                    </svg>
-                                <?php endfor; ?>
-                            </div>
-                            <span class="text-muted small">(5.0) Based on reviews</span>
-                        </div>
-
                         <h2 class="h3 fw-normal mb-4">$<?php echo number_format($product['prod_price'], 2); ?></h2>
 
                         <div class="mb-4">
@@ -147,7 +136,7 @@ include "utils/navbar.php";
                         <div class="mb-4">
                             <div class="row align-items-center">
                                 <div class="col-md-4 col-6">
-                                    <?php if (isset($product['prod_stock']) && $product['prod_stock'] > 0): ?>
+                                    <?php if (isset($product['prod_stock']) && $product['prod_stock'] > 0): ?>xpn
                                         <label for="quantity" class="form-label">Quantity</label>
                                         <div class="input-group product-qty">
                                             <span class="input-group-btn">

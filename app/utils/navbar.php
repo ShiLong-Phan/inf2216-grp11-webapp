@@ -80,11 +80,11 @@ if (isset($_SESSION['user_id'])) {
         </symbol>
     </defs>
 </svg>
-<!-- 
+
 <div class="preloader-wrapper">
     <div class="preloader">
     </div>
-  </div> -->
+</div>
 
 <?php include 'cart.php'; ?>
 
@@ -144,7 +144,6 @@ if (isset($_SESSION['user_id'])) {
                         </li>
                     <?php endif; ?>
 
-                    <!-- Update the cart section in your navbar (around line 198) -->
 
                     <!-- logout -->
                     <?php if (isset($_SESSION['user_id'])): ?>
@@ -153,14 +152,6 @@ if (isset($_SESSION['user_id'])) {
                                 <i class="fa fa-sign-out" aria-hidden="true"></i>
                             </a>
                         </li>
-                        <!-- Add cart link for logged-in users -->
-                        <!-- <li class="ms-3">
-                            <a href="cart.php" class="rounded-circle bg-light p-2 mx-1">
-                                <svg width="24" height="24" viewBox="0 0 24 24">
-                                    <use xlink:href="#cart"></use>
-                                </svg>
-                            </a>
-                        </li> -->
                     <?php endif; ?>
                 </ul>
                 <div class="cart text-end d-none d-lg-block dropdown">
@@ -168,15 +159,20 @@ if (isset($_SESSION['user_id'])) {
                         <div class="d-flex align-items-center">
                             <button class="border-0 bg-transparent d-flex flex-column gap-2 lh-1" type="button"
                                 data-bs-toggle="offcanvas" data-bs-target="#offcanvasCart" aria-controls="offcanvasCart">
-                                <span class="fs-6 text-muted dropdown-toggle">Cart</span>
+                                <div class="d-flex align-items-center">
+                                    <span class="fs-6 text-muted me-1">Cart</span>
+                                    <i class="fa fa-caret-down text-muted"></i>
+                                </div>
                                 <span class="cart-total fs-5 fw-bold">$<?php echo number_format($cartTotal, 2); ?></span>
                             </button>
-
                         </div>
                     <?php else: ?>
                         <a href="login.php"
                             class="border-0 bg-transparent d-flex flex-column gap-2 lh-1 text-decoration-none">
-                            <span class="fs-6 text-muted">Your Cart</span>
+                            <div class="d-flex align-items-center">
+                                <span class="fs-6 text-muted me-1">Your Cart</span>
+                                <i class="fa fa-caret-down text-muted"></i>
+                            </div>
                             <span class="fs-5 fw-bold">Login to view</span>
                         </a>
                     <?php endif; ?>

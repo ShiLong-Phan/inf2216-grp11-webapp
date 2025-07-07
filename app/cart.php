@@ -170,8 +170,9 @@ foreach ($cartItems as $item) {
     }
 </style>
 
-<div class="offcanvas offcanvas-end offcanvas-cart-custom" data-bs-scroll="true" tabindex="-1" id="offcanvasCart" aria-labelledby="My Cart">
-        <div class="offcanvas-header justify-content-center">
+<div class="offcanvas offcanvas-end offcanvas-cart-custom" tabindex="-1" id="offcanvasCart" aria-labelledby="offcanvasCartLabel">
+    <div class="offcanvas-header justify-content-center">
+        <h5 class="offcanvas-title" id="offcanvasCartLabel">My Cart</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
@@ -199,7 +200,7 @@ foreach ($cartItems as $item) {
                         <a href="index.php" class="btn btn-primary">Start Shopping</a>
                     </div>
                 <?php else: ?>
-                                        <!-- Replace the cart item layout (around line 120-170) with this improved version: -->
+                    <!-- Replace the cart item layout (around line 120-170) with this improved version: -->
                     
                     <ul class="list-group mb-3">
                         <?php foreach ($cartItems as $item): ?>
@@ -324,18 +325,18 @@ foreach ($cartItems as $item) {
                     },
                     body: `cart_id=${cartId}&action=${action}`
                 })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Reload the cart to show updated items
-                            window.location.reload();
-                        } else {
-                            alert('Error updating cart: ' + data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update cart without page refresh
+                        updateCartDisplay();
+                    } else {
+                        alert('Error updating cart: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
             });
         });
 
@@ -354,11 +355,100 @@ foreach ($cartItems as $item) {
                         },
                         body: `cart_id=${cartId}&action=remove`
                     })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update cart without page refresh
+                            updateCartDisplay();
+                        } else {
+                            alert('Error removing item: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                }
+            });
+        });
+
+        // Function to update cart display without refreshing the page
+        function updateCartDisplay() {
+            fetch('get-cart-content.php')
+            .then(response => response.text())
+            .then(html => {
+                // Replace the cart content with the updated HTML
+                const offcanvasBody = document.querySelector('.offcanvas-body');
+                offcanvasBody.innerHTML = html;
+                
+                // Re-attach event listeners to the new elements
+                attachCartEventListeners();
+                
+                // Make sure the offcanvas stays open
+                const cartOffcanvas = document.getElementById('offcanvasCart');
+                if (cartOffcanvas) {
+                    const bsOffcanvas = bootstrap.Offcanvas.getInstance(cartOffcanvas);
+                    if (!bsOffcanvas) {
+                        // If the instance doesn't exist, the offcanvas might have been destroyed
+                        // Recreate it and show it
+                        new bootstrap.Offcanvas(cartOffcanvas).show();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching cart content:', error);
+            });
+        }
+
+        // Function to attach event listeners to cart elements
+        function attachCartEventListeners() {
+            // Re-attach quantity update event listeners
+            document.querySelectorAll('.cart-quantity-update').forEach(button => {
+                button.addEventListener('click', function() {
+                    if (this.hasAttribute('disabled')) {
+                        return;
+                    }
+                    
+                    const cartId = this.getAttribute('data-cart-id');
+                    const action = this.getAttribute('data-action');
+
+                    fetch('update-cart.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `cart_id=${cartId}&action=${action}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateCartDisplay();
+                        } else {
+                            alert('Error updating cart: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                });
+            });
+
+            // Re-attach remove item event listeners
+            document.querySelectorAll('.cart-item-remove').forEach(button => {
+                button.addEventListener('click', function() {
+                    if (confirm('Are you sure you want to remove this item from your cart?')) {
+                        const cartId = this.getAttribute('data-cart-id');
+
+                        fetch('update-cart.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `cart_id=${cartId}&action=remove`
+                        })
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                // Reload the cart to show updated items
-                                window.location.reload();
+                                updateCartDisplay();
                             } else {
                                 alert('Error removing item: ' + data.message);
                             }
@@ -366,31 +456,35 @@ foreach ($cartItems as $item) {
                         .catch(error => {
                             console.error('Error:', error);
                         });
-                }
+                    }
+                });
             });
-        });
-    });
 
-        // Add this to the existing script section (around line 350)
-    
-    // Stock warning check on checkout
-    const checkoutWithWarningBtn = document.getElementById('checkoutWithWarning');
-    if (checkoutWithWarningBtn) {
-        checkoutWithWarningBtn.addEventListener('click', function() {
-            let stockWarnings = [];
-            
-            <?php foreach ($stockIssues as $issue): ?>
-                stockWarnings.push("• <?php echo addslashes(htmlspecialchars($issue['product'])); ?> <?php echo addslashes($issue['message']); ?>");
-        <?php endforeach; ?>
-            
-            const warningMessage = "Some items in your cart have stock issues:\n\n" + 
-                                   stockWarnings.join("\n") + 
-                                   "\n\nWould you like to proceed to checkout anyway? Your quantities will be adjusted automatically.";
-                                   
-            if (confirm(warningMessage)) {
-                // User confirmed, proceed to checkout
-                window.location.href = 'checkout.php';
+            // Re-attach checkout warning button event listener
+            const checkoutWithWarningBtn = document.getElementById('checkoutWithWarning');
+            if (checkoutWithWarningBtn) {
+                checkoutWithWarningBtn.addEventListener('click', function() {
+                    fetch('get-stock-warnings.php')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.stockWarnings && data.stockWarnings.length > 0) {
+                            const warningMessage = "Some items in your cart have stock issues:\n\n" + 
+                                                data.stockWarnings.join("\n") + 
+                                                "\n\nWould you like to proceed to checkout anyway? Your quantities will be adjusted automatically.";
+                            
+                            if (confirm(warningMessage)) {
+                                window.location.href = 'checkout.php';
+                            }
+                        } else {
+                            window.location.href = 'checkout.php';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        window.location.href = 'checkout.php';
+                    });
+                });
             }
-        });
-    }
+        }
+    });
 </script>
