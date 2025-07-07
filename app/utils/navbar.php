@@ -170,7 +170,7 @@ if (isset($_SESSION['user_id'])) {
                         <a href="login.php"
                             class="border-0 bg-transparent d-flex flex-column gap-2 lh-1 text-decoration-none">
                             <div class="d-flex align-items-center">
-                                <span class="fs-6 text-muted me-1">Your Cart</span>
+                                <span class="fs-6 text-muted me-1">Cart</span>
                                 <i class="fa fa-caret-down text-muted"></i>
                             </div>
                             <span class="fs-5 fw-bold">Login to view</span>
