@@ -199,14 +199,12 @@ foreach ($cartItems as $item) {
                         <p class="text-muted mb-4">Looks like you haven't added any items to your cart yet.</p>
                         <a href="index.php" class="btn btn-primary">Start Shopping</a>
                     </div>
-                <?php else: ?>
-                    <!-- Replace the cart item layout (around line 120-170) with this improved version: -->
-                    
+                <?php else: ?>                    
                     <ul class="list-group mb-3">
                         <?php foreach ($cartItems as $item): ?>
                             <li class="list-group-item py-3">
                                 <div class="row align-items-center">
-                                    <!-- Product image and info - 50% width -->
+                                    <!-- Product image and info -->
                                     <div class="col-6">
                                         <div class="d-flex align-items-center">
                                             <?php if (!empty($item['prod_image'])): ?>

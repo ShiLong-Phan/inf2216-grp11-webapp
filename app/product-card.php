@@ -100,7 +100,6 @@ $isOutOfStock = isset($product['prod_stock']) && $product['prod_stock'] <= 0;
                     </a>
                 <?php endif; ?>
             <?php else: ?>
-                <!-- Placeholder div that mimics the appearance of the controls -->
                 <div class="d-flex w-100 justify-content-center">
                     <span class="out-of-stock-message">Currently Unavailable</span>
                 </div>

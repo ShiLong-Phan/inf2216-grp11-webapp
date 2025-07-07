@@ -57,16 +57,14 @@
 <body>
   <?php include 'utils/navbar.php'; ?>
 
-  <!-- Main container with no padding for banner -->
   <div class="container-fluid px-0">
-    <!-- Banner section - full width -->
+    <!-- Banner section -->
     <div class="banner-section">
       <div class="banner-container">
         <img src="images/crumbly-banner.png" alt="Crumbly Banner" class="banner-image">
       </div>
     </div>
 
-    <!-- Content container with padding -->
     <div class="container">
       <!-- Category section -->
       <div class="row">

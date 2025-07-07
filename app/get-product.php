@@ -11,8 +11,6 @@ if (!$conn) {
     die("Database connection failed: " . mysqli_connect_error());
 }
 
-echo "<!-- Database connection successful -->";
-
 // Prepare the statement:
 $stmt = $conn->prepare("SELECT * FROM ssdgroup11db.products");
 
@@ -23,9 +21,6 @@ if (!$stmt) {
 
 $stmt->execute();
 $result = $stmt->get_result();
-
-// Debug: Print the number of rows returned
-echo "<!-- Query executed. Number of rows returned: " . $result->num_rows . " -->";
 
 // Store all products for later use in different tabs
 $all_products = [];
@@ -47,10 +42,7 @@ if ($result) {
             $categories[$row['prod_category']][] = $row;
         }
     }
-    // Debug: Print the count of products in each category
-    echo "<!-- Total products: " . count($all_products) . " -->";
     foreach ($categories as $category => $products) {
-        echo "<!-- Category '$category': " . count($products) . " products -->";
     }
 } else {
     echo "<!-- Query execution failed -->";

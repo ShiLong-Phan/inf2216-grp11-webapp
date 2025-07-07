@@ -136,7 +136,7 @@ include "utils/navbar.php";
                         <div class="mb-4">
                             <div class="row align-items-center">
                                 <div class="col-md-4 col-6">
-                                    <?php if (isset($product['prod_stock']) && $product['prod_stock'] > 0): ?>xpn
+                                    <?php if (isset($product['prod_stock']) && $product['prod_stock'] > 0): ?>
                                         <label for="quantity" class="form-label">Quantity</label>
                                         <div class="input-group product-qty">
                                             <span class="input-group-btn">
@@ -187,11 +187,6 @@ include "utils/navbar.php";
                                         </svg>
                                         Add to Cart
                                     </button>
-                                    <!-- <button type="button" class="btn btn-outline-secondary btn-lg">
-                                        <svg width="18" height="18">
-                                            <use xlink:href="#heart"></use>
-                                        </svg>
-                                    </button> -->
                                 <?php else: ?>
                                     <!-- Out of stock message -->
                                     <button type="button" class="btn btn-secondary btn-lg flex-grow-1" disabled>
@@ -209,14 +204,6 @@ include "utils/navbar.php";
                                         <span><?php echo htmlspecialchars($product['category_name']); ?></span>
                                     </li>
                                 <?php endif; ?>
-                                <li class="d-flex justify-content-between mb-2">
-                                    <!-- <span class="text-muted">Date Added:</span>
-                                    <span><?php echo date('F j, Y', strtotime($product['prod_date_added'])); ?></span> -->
-                                </li>
-                                <li class="d-flex justify-content-between">
-                                    <!-- <span class="text-muted">Product ID:</span>
-                                    <span>#<?php echo $product['prod_id']; ?></span> -->
-                                </li>
                             </ul>
                         </div>
                     </div>

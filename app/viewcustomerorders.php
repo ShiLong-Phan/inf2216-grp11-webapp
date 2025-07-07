@@ -170,7 +170,6 @@ try {
             <div class="row justify-content-center">
                 <div class="col-md-12 col-lg-12 col-xl-10">
                     <div class="row">
-                        <!-- Left side: Profile header with navigation buttons -->
                         <div class="col-md-4 mb-4 mb-md-0">
                             <div class="card border-0 shadow-lg rounded-4 overflow-hidden bg-primary text-white" style="box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;">
                                 <div class="card-body p-3">
@@ -186,7 +185,6 @@ try {
                                         </div>
                                     </div>
 
-                                    <!-- Navigation buttons in horizontal layout -->
                                     <div class="d-grid gap-2 mt-2">
                                         <a href="profile.php" class="btn btn-outline-light py-2 shadow-sm">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-gear me-2" viewBox="0 0 16 16">
@@ -223,7 +221,7 @@ try {
                             </div>
                         </div>
 
-                        <!-- Right side: Orders content -->
+                        <!-- Orders content -->
                         <div class="col-md-8">
                             <div class="card border-0 shadow-lg rounded-4 overflow-hidden" style="box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;">
                                 <div class="card-header bg-white p-4 border-0">

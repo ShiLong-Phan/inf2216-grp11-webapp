@@ -91,7 +91,7 @@ $category_description = isset($category_descriptions[$category]) ? $category_des
         </div>
     </section>
 
-    <!-- Category Navigation - Same format as index.php -->
+    <!-- Category Navigation -->
     <section class="py-4 overflow-hidden">
         <div class="container-fluid">
             <div class="row">
