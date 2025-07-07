@@ -1,5 +1,5 @@
 <?php
-session_start();
+include "utils/session.php";
 include "utils/dbconnect.php";
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
