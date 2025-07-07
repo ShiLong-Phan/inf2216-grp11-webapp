@@ -22,17 +22,6 @@ jobs:
             --failOnCVSS 7
             --scan ./vendor
 
-      - name: Warn for CVSS 4.0–6.9 vulnerabilities
-        run: |
-          echo "Scanning for medium severity CVSS scores (4.0–6.9)..."
-          MEDIUM_VULNS=$(grep -E 'CVSS Score: [4-6]\.' dependency-check-report/dependency-check-report.html | uniq)
-          if [ -n "$MEDIUM_VULNS" ]; then
-            echo "⚠️ Warning: Medium severity vulnerabilities found (CVSS 4.0–6.9):"
-            echo "$MEDIUM_VULNS"
-          else
-            echo "No medium severity vulnerabilities (CVSS 4.0–6.9) found."
-          fi
-
       - name: Upload Report
         uses: actions/upload-artifact@v4
         with:
