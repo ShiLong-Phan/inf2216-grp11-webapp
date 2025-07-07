@@ -55,7 +55,6 @@ if ($conn) {
         $fullName = htmlspecialchars($_POST['full_name']);
         $email = htmlspecialchars($_POST['email']);
         $address = htmlspecialchars($_POST['address']);
-        $paymentMethod = htmlspecialchars($_POST['payment_method']);
 
         // Begin transaction
         $conn->begin_transaction();
@@ -78,8 +77,8 @@ if ($conn) {
 
             // Prepare stock update statement
             $updateStockStmt = $conn->prepare("UPDATE ssdgroup11db.products 
-                                               SET prod_stock = prod_stock - ? 
-                                               WHERE prod_id = ? AND prod_stock >= ?");
+                                   SET prod_stock = prod_stock - ? 
+                                   WHERE prod_id = ?");
 
             $stockUpdated = true;
             $stockErrors = [];
@@ -115,12 +114,11 @@ if ($conn) {
                 );
                 $itemStmt->execute();
 
-                // Update product stock
+                // Update product stock - MODIFIED: Changed to 2 parameters
                 $updateStockStmt->bind_param(
-                    "iii",
+                    "ii",
                     $quantityToOrder,
-                    $item['cart_prod_id'],
-                    $quantityToOrder
+                    $item['cart_prod_id']
                 );
 
                 if (!$updateStockStmt->execute() || $updateStockStmt->affected_rows == 0) {
@@ -128,7 +126,6 @@ if ($conn) {
                     $stockErrors[] = "Failed to update stock for {$item['prod_name']}.";
                 }
             }
-
             // If we had stock errors but some items were processed, adjust the order total
             if (!empty($stockErrors)) {
                 // Recalculate the total based on what was actually ordered
@@ -230,7 +227,6 @@ if ($conn) {
                     </div>
                     <div style="padding: 20px; border: 1px solid #ddd; border-top: none;">
                         <div style="text-align: center; margin-bottom: 30px;">
-                        <img src="c:\Users\isaac\Downloads\checkmark.png" alt="Checkmark" style="width: 64px; height: 64px;">                            
                             <h2 style="color: #4CAF50;">Thank You for Your Order!</h2>
                             <p style="font-size: 16px;">Your order has been placed successfully.</p>
                         </div>
@@ -384,21 +380,6 @@ include "utils/navbar.php";
                                     <label for="address" class="form-label">Address</label>
                                     <input type="text" class="form-control" id="address" name="address"
                                         value="<?php echo htmlspecialchars($userInfo['user_address'] ?? ''); ?>" required>
-                                </div>
-                            </div>
-
-                            <!-- Payment Method -->
-                            <h5 class="mb-3">Payment Method</h5>
-                            <div class="my-3">
-                                <div class="form-check">
-                                    <input id="credit" name="payment_method" type="radio" class="form-check-input"
-                                        value="credit" checked required>
-                                    <label class="form-check-label" for="credit">Credit card</label>
-                                </div>
-                                <div class="form-check">
-                                    <input id="debit" name="payment_method" type="radio" class="form-check-input"
-                                        value="debit" required>
-                                    <label class="form-check-label" for="debit">Debit card</label>
                                 </div>
                             </div>
 

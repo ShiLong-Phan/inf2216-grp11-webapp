@@ -239,14 +239,14 @@ foreach ($cartItems as $item) {
                                         </div>
                                     </div>
                                     
-                                    <!-- Subtotal - 15% width -->
+                                    <!-- Subtotal -->
                                     <div class="col-2 text-center">
                                         <span class="d-block fw-bold">
                                             $<?php echo number_format($item['cart_subtotal'], 2); ?>
                                         </span>
                                     </div>
                                     
-                                    <!-- Quantity controls - 20% width -->
+                                    <!-- Quantity controls -->
                                     <div class="col-3 text-center">
                                         <div class="d-flex justify-content-center align-items-center">
                                             <button class="btn btn-sm btn-outline-secondary cart-quantity-update"
@@ -264,7 +264,7 @@ foreach ($cartItems as $item) {
                                         </div>
                                     </div>
                                     
-                                    <!-- Remove button - 15% width -->
+                                    <!-- Remove button -->
                                     <div class="col-1 text-end">
                                         <button class="btn btn-sm btn-outline-danger cart-item-remove" 
                                             data-cart-id="<?php echo $item['cart_id']; ?>">
@@ -302,7 +302,7 @@ foreach ($cartItems as $item) {
     </div>
 </div>
 
-<!-- Add this script for cart functionality -->
+<!-- Cart functionality -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Update quantity buttons
@@ -381,7 +381,7 @@ foreach ($cartItems as $item) {
             
             <?php foreach ($stockIssues as $issue): ?>
                 stockWarnings.push("• <?php echo addslashes(htmlspecialchars($issue['product'])); ?> <?php echo addslashes($issue['message']); ?>");
-            <?php endforeach; ?>
+        <?php endforeach; ?>
             
             const warningMessage = "Some items in your cart have stock issues:\n\n" + 
                                    stockWarnings.join("\n") + 

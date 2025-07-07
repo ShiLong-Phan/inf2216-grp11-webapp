@@ -285,7 +285,7 @@ try {
                                                             </div>
                                                             <div class="col-md-3 mt-3 mt-md-0 text-md-end">
                                                                 <p class="mb-2">Total: <span class="fw-bold"><?php echo '$' . number_format($order['order_total'], 2); ?></span></p>
-                                                                <a href="order_details.php?id=<?php echo $order['order_id']; ?>" class="btn btn-sm btn-outline-primary">View Details</a>
+                                                                <a href="order-details.php?order_id=<?php echo $order['order_id']; ?>" class="btn btn-sm btn-outline-primary">View Details</a>
 
                                                                 <?php if ($order['order_status'] === 'to_receive'): ?>
                                                                     <button class="btn btn-sm btn-success ms-2">Received</button>

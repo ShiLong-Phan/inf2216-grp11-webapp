@@ -94,8 +94,11 @@ include "utils/navbar.php";
                     <p><strong>Order Number:</strong> #<?php echo $orderDetails['order_id']; ?></p>
                     <p><strong>Order Date:</strong>
                         <?php echo date('F j, Y, g:i a', strtotime($orderDetails['order_date'])); ?></p>
-                    <p><strong>Order Status:</strong> <span
-                            class="badge bg-warning"><?php echo ucfirst($orderDetails['order_status']); ?></span></p>
+                    <p><strong>Order Status:</strong>
+                        <span>
+                            <?php echo ucfirst($orderDetails['order_status']); ?>
+                        </span>
+                    </p>
                 </div>
                 <div class="col-md-6">
                     <h5>Customer Information</h5>
@@ -124,16 +127,15 @@ include "utils/navbar.php";
                             <tr>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                    <?php
-                                    // Either the DB path or the placeholder
-                                    $imgSrc = !empty($item['prod_image'])
-                                        ? $item['prod_image']
-                                        : 'images/product-placeholder.png';
-                                    ?>
-                                    <img src="<?php echo htmlspecialchars($imgSrc); ?>"
-                                        alt="<?php echo htmlspecialchars($item['prod_name']); ?>"
-                                        class="me-2"
-                                        style="width:50px; height:50px; object-fit:cover;">
+                                        <?php
+                                        // Either the DB path or the placeholder
+                                        $imgSrc = !empty($item['prod_image'])
+                                            ? $item['prod_image']
+                                            : 'images/product-placeholder.png';
+                                        ?>
+                                        <img src="<?php echo htmlspecialchars($imgSrc); ?>"
+                                            alt="<?php echo htmlspecialchars($item['prod_name']); ?>" class="me-2"
+                                            style="width:50px; height:50px; object-fit:cover;">
                                         <?php echo htmlspecialchars($item['prod_name']); ?>
                                     </div>
                                 </td>
