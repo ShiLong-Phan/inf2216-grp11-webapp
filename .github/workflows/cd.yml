@@ -108,6 +108,11 @@ jobs:
             # Update the application
             docker-compose pull
             docker-compose down
+
+            # Start Splunk first and wait for it to be available
+            docker-compose up -d splunk
+            echo "Waiting for Splunk to initialize..."
+            sleep 60  # Give Splunk time to start
             docker-compose up -d
             
             # Check if containers are running
