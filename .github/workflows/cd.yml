@@ -162,17 +162,6 @@ jobs:
               fi
             fi
             
-            # Pull the latest code
-            echo "Pulling latest code..."
-            if [ -d ".git" ]; then
-              git pull origin main || {
-                echo "Git pull failed, trying to reset and pull"
-                git fetch origin
-                git reset --hard origin/main
-              }
-            else
-              echo "Not a git repository, skipping git pull"
-            fi
             
             # Stop all services first
             echo "Stopping all services..."
