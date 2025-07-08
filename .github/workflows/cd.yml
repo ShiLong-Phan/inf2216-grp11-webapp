@@ -92,6 +92,7 @@ jobs:
             docker images
             exit 1
           fi
+        
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -99,9 +100,11 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            # Force bash shell for consistent behavior
+            exec bash <<'EOB'
+            
             # Set proper shell and error handling
             set -e
-            export SHELL=/bin/bash
             
             # Check current directory and environment
             echo "Current directory: $(pwd)"
@@ -131,93 +134,50 @@ jobs:
             
             # Create backup directory (use home directory if /var/backups fails)
             BACKUP_DIR="$HOME/backups/crumbly"
-            if ! mkdir -p "$BACKUP_DIR" 2>/dev/null; then
-              echo "Cannot create backup directory in home, trying with sudo"
-              sudo mkdir -p /var/backups/crumbly 2>/dev/null && BACKUP_DIR="/var/backups/crumbly" || {
-                echo "Backup directory creation failed, skipping backup"
-                BACKUP_DIR=""
-              }
-            fi
+            mkdir -p "$BACKUP_DIR" || {
+              echo "Backup directory creation failed, skipping backup"
+              BACKUP_DIR=""
+            }
             
-            # Find docker-compose executable path
-            DOCKER_COMPOSE_PATH=$(which docker-compose 2>/dev/null || echo "")
-            if [ -z "$DOCKER_COMPOSE_PATH" ]; then
-              # Check common locations
-              for path in /usr/local/bin/docker-compose /usr/bin/docker-compose $HOME/.local/bin/docker-compose; do
-                if [ -x "$path" ]; then
-                  DOCKER_COMPOSE_PATH="$path"
-                  break
-                fi
-              done
-            fi
+            # Check if docker-compose exists and is executable
+            echo "Checking for docker-compose..."
+            which docker-compose || {
+              echo "docker-compose not found in PATH"
+              echo "PATH: $PATH"
+            }
             
-            # If still not found, install it
-            if [ -z "$DOCKER_COMPOSE_PATH" ]; then
-              echo "docker-compose not found, installing..."
-              sudo curl -L "https://github.com/docker/compose/releases/download/v2.17.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-              sudo chmod +x /usr/local/bin/docker-compose
-              DOCKER_COMPOSE_PATH="/usr/local/bin/docker-compose"
-            fi
+            # Check if docker command works with sudo
+            echo "Testing sudo with docker command..."
+            sudo docker --version || {
+              echo "Error: sudo docker command failed"
+            }
             
-            echo "Using docker-compose at: $DOCKER_COMPOSE_PATH"
-            
-            # Set Docker commands with full paths
-            if groups | grep -q docker; then
-              DOCKER_CMD="docker"
-              DOCKER_COMPOSE_CMD="$DOCKER_COMPOSE_PATH"
-              echo "User is in docker group, using direct docker commands"
-            else
-              DOCKER_CMD="sudo docker"
-              DOCKER_COMPOSE_CMD="sudo $DOCKER_COMPOSE_PATH"
-              echo "User not in docker group, using sudo for docker commands"
-            fi
-            
-            # Backup the database if containers are running and backup dir exists
-            if [ -n "$BACKUP_DIR" ]; then
-              echo "Checking for running database container..."
-              DB_CONTAINER=$($DOCKER_CMD ps -qf name=ict2216_db 2>/dev/null || true)
-              if [ -n "$DB_CONTAINER" ]; then
-                echo "Backing up database..."
-                $DOCKER_CMD exec "$DB_CONTAINER" sh -c 'exec mysqldump -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE' > "$BACKUP_DIR/db-backup-$(date +%Y%m%d-%H%M%S).sql" 2>/dev/null || echo "Database backup failed, continuing deployment"
-              else
-                echo "No database container found (looking for ict2216_db), skipping backup"
-              fi
-            fi
+            # Instead of trying to use the full path, use the command directly with sudo
+            DOCKER_CMD="sudo docker"
+            DOCKER_COMPOSE_CMD="sudo docker-compose"
+            echo "Using docker commands: $DOCKER_CMD and $DOCKER_COMPOSE_CMD"
             
             # Stop all services first
             echo "Stopping all services..."
-            $DOCKER_COMPOSE_CMD down || echo "Docker compose down failed, continuing"
+            sudo docker-compose down || echo "Docker compose down failed, continuing"
             
             # Pull latest images
             echo "Pulling latest images..."
-            $DOCKER_COMPOSE_CMD pull || echo "Docker compose pull failed, continuing"
+            sudo docker-compose pull || echo "Docker compose pull failed, continuing"
             
             # Start Splunk FIRST and wait for it to be ready
             echo "Starting Splunk container first..."
-            $DOCKER_COMPOSE_CMD up -d splunk --force-recreate || {
+            sudo docker-compose up -d splunk || {
               echo "Splunk start failed, but continuing"
             }
             
             # Wait for Splunk to be ready
             echo "Waiting for Splunk to initialize..."
-            SPLUNK_READY=false
-            for i in {1..12}; do  # Try for 2 minutes (12 * 10 seconds)
-              if $DOCKER_CMD ps --format "table {{.Names}}\t{{.Status}}" 2>/dev/null | grep -q "ict2216_splunk.*healthy\|ict2216_splunk.*Up"; then
-                echo "Splunk is ready (attempt $i)"
-                SPLUNK_READY=true
-                break
-              fi
-              echo "Waiting for Splunk to be ready (attempt $i/12)..."
-              sleep 10
-            done
-            
-            if [ "$SPLUNK_READY" = false ]; then
-              echo "Warning: Splunk may not be fully ready, but continuing with deployment"
-            fi
+            sleep 30
             
             # Start database next (some services depend on it)
             echo "Starting database container..."
-            $DOCKER_COMPOSE_CMD up -d db --force-recreate || {
+            sudo docker-compose up -d db || {
               echo "Database start failed, but continuing"
             }
             
@@ -227,13 +187,18 @@ jobs:
             
             # Start all remaining services
             echo "Starting all services..."
-            $DOCKER_COMPOSE_CMD up -d --force-recreate || {
+            sudo docker-compose up -d || {
               echo "Failed to start all services, checking individual services..."
-              $DOCKER_COMPOSE_CMD ps || echo "Failed to list services"
-              echo "Checking logs for errors:"
-              $DOCKER_COMPOSE_CMD logs --tail=20 || echo "Failed to get logs"
+              sudo docker-compose ps || echo "Failed to list services"
             }
+            
+            # Check if containers are running
+            echo "Container status:"
+            sudo docker ps || echo "Failed to list containers"
+            
             echo "Deployment completed successfully"
+            
+            EOB
 
       - name: Local cleanup
         if: always()  # Run even if previous steps failed

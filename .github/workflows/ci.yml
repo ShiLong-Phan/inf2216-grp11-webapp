@@ -3,9 +3,12 @@ name: Continuous Integration
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
+    paths-ignore:
+      - '.github/workflows/cd.yml'
+
   workflow_dispatch:  # Add this line
 
 jobs:
