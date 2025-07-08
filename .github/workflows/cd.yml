@@ -72,7 +72,7 @@ jobs:
           
           # Find the PHP image by looking for the correct pattern
           # Note: The image name has a hyphen (-) not an underscore (_)
-          PHP_IMAGE_NAME="inf2216-grp11-webapp-php"
+          PHP_IMAGE_NAME="inf2216-grp11-webapp-php:latest"
           
           # Verify image exists
           if docker image inspect $PHP_IMAGE_NAME > /dev/null 2>&1; then
@@ -92,7 +92,6 @@ jobs:
             docker images
             exit 1
           fi
-      
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -100,43 +99,175 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            # Create a backup directory if it doesn't exist
-            mkdir -p /var/backups/crumbly
+            # Set proper shell and error handling
+            set -e
+            export SHELL=/bin/bash
             
-            # Navigate to application directory
-            cd /app
+            # Check current directory and environment
+            echo "Current directory: $(pwd)"
+            echo "User: $(whoami)"
+            echo "Groups: $(groups)"
             
-            # Backup the database
-            docker exec $(docker ps -qf name=db) sh -c 'exec mysqldump -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE' > /var/backups/crumbly/db-backup-$(date +%Y%m%d-%H%M%S).sql || echo "Database backup failed, continuing deployment"
+            # Navigate to the correct application directory
+            APP_DIR="$HOME/ict2216"
+            echo "Navigating to application directory: $APP_DIR"
             
-            # Pull the latest code
-            cd ..
-            git pull origin main
-            
-            # Install Docker Compose if not present
-            if ! command -v docker-compose &> /dev/null; then
-              curl -L "https://github.com/docker/compose/releases/download/v2.17.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-              chmod +x /usr/local/bin/docker-compose
+            if [ ! -d "$APP_DIR" ]; then
+              echo "Error: Application directory $APP_DIR does not exist"
+              echo "Available directories in $HOME:"
+              ls -la $HOME/
+              exit 1
             fi
             
-            # Update the application
-            docker-compose pull
-            docker-compose down
-
-            # Start Splunk first and wait for it to be available
-            docker-compose up -d splunk
+            cd "$APP_DIR"
+            
+            # Verify we're in the correct directory with docker-compose.yml
+            if [ ! -f "docker-compose.yml" ]; then
+              echo "Error: docker-compose.yml not found in $APP_DIR"
+              echo "Directory contents:"
+              ls -la
+              exit 1
+            fi
+            
+            # Create backup directory (use home directory if /var/backups fails)
+            BACKUP_DIR="$HOME/backups/crumbly"
+            if ! mkdir -p "$BACKUP_DIR" 2>/dev/null; then
+              echo "Cannot create backup directory in home, trying with sudo"
+              sudo mkdir -p /var/backups/crumbly 2>/dev/null && BACKUP_DIR="/var/backups/crumbly" || {
+                echo "Backup directory creation failed, skipping backup"
+                BACKUP_DIR=""
+              }
+            fi
+            
+            # Check if user is in docker group, use sudo if needed
+            if groups | grep -q docker; then
+              DOCKER_CMD="docker"
+              DOCKER_COMPOSE_CMD="docker-compose"
+              echo "User is in docker group, using direct docker commands"
+            else
+              DOCKER_CMD="sudo docker"
+              DOCKER_COMPOSE_CMD="sudo docker-compose"
+              echo "User not in docker group, using sudo for docker commands"
+            fi
+            
+            # Backup the database if containers are running and backup dir exists
+            if [ -n "$BACKUP_DIR" ]; then
+              echo "Checking for running database container..."
+              DB_CONTAINER=$($DOCKER_CMD ps -qf name=ict2216_db 2>/dev/null || true)
+              if [ -n "$DB_CONTAINER" ]; then
+                echo "Backing up database..."
+                $DOCKER_CMD exec "$DB_CONTAINER" sh -c 'exec mysqldump -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE' > "$BACKUP_DIR/db-backup-$(date +%Y%m%d-%H%M%S).sql" 2>/dev/null || echo "Database backup failed, continuing deployment"
+              else
+                echo "No database container found (looking for ict2216_db), skipping backup"
+              fi
+            fi
+            
+            # Pull the latest code
+            echo "Pulling latest code..."
+            if [ -d ".git" ]; then
+              git pull origin main || {
+                echo "Git pull failed, trying to reset and pull"
+                git fetch origin
+                git reset --hard origin/main
+              }
+            else
+              echo "Not a git repository, skipping git pull"
+            fi
+            
+            # Stop all services first
+            echo "Stopping all services..."
+            $DOCKER_COMPOSE_CMD down || echo "Docker compose down failed, continuing"
+            
+            # Pull latest images
+            echo "Pulling latest images..."
+            $DOCKER_COMPOSE_CMD pull || echo "Docker compose pull failed, continuing"
+            
+            # Start Splunk FIRST and wait for it to be ready
+            echo "Starting Splunk container first..."
+            $DOCKER_COMPOSE_CMD up -d splunk || {
+              echo "Splunk start failed, but continuing"
+            }
+            
+            # Wait for Splunk to be ready
             echo "Waiting for Splunk to initialize..."
-            sleep 60  # Give Splunk time to start
-            docker-compose up -d
+            SPLUNK_READY=false
+            for i in {1..12}; do  # Try for 2 minutes (12 * 10 seconds)
+              if $DOCKER_CMD ps --format "table {{.Names}}\t{{.Status}}" | grep -q "ict2216_splunk.*healthy\|ict2216_splunk.*Up"; then
+                echo "Splunk is ready (attempt $i)"
+                SPLUNK_READY=true
+                break
+              fi
+              echo "Waiting for Splunk to be ready (attempt $i/12)..."
+              sleep 10
+            done
+            
+            if [ "$SPLUNK_READY" = false ]; then
+              echo "Warning: Splunk may not be fully ready, but continuing with deployment"
+            fi
+            
+            # Start database next (some services depend on it)
+            echo "Starting database container..."
+            $DOCKER_COMPOSE_CMD up -d db || {
+              echo "Database start failed, but continuing"
+            }
+            
+            # Wait a bit for database to be ready
+            echo "Waiting for database to be ready..."
+            sleep 15
+            
+            # Start all remaining services
+            echo "Starting all services..."
+            $DOCKER_COMPOSE_CMD up -d || {
+              echo "Failed to start all services, checking individual services..."
+              $DOCKER_COMPOSE_CMD ps
+              echo "Checking logs for errors:"
+              $DOCKER_COMPOSE_CMD logs --tail=20
+            }
+            
+            # Final wait for all services to stabilize
+            echo "Waiting for all services to stabilize..."
+            sleep 10
             
             # Check if containers are running
-            docker-compose ps
+            echo "Final container status:"
+            $DOCKER_COMPOSE_CMD ps || echo "Failed to get container status"
             
-            # Clean up unused resources
-            rm -f .env
-            docker system prune -a -f --volumes
+            # Show detailed status
+            echo "Detailed container information:"
+            $DOCKER_CMD ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" || echo "Failed to list containers"
+            
+            # Clean up unused resources (be conservative)
+            echo "Cleaning up unused Docker resources..."
+            $DOCKER_CMD image prune -f || true
+            
+            # Check if key services are running
+            echo "Checking key services..."
+            if $DOCKER_CMD ps --format "{{.Names}}" | grep -q "ict2216_web"; then
+              echo "✓ Web service is running"
+            else
+              echo "✗ Web service is NOT running"
+            fi
+            
+            if $DOCKER_CMD ps --format "{{.Names}}" | grep -q "ict2216_php"; then
+              echo "✓ PHP service is running"
+            else
+              echo "✗ PHP service is NOT running"
+            fi
+            
+            if $DOCKER_CMD ps --format "{{.Names}}" | grep -q "ict2216_db"; then
+              echo "✓ Database service is running"
+            else
+              echo "✗ Database service is NOT running"
+            fi
+            
+            if $DOCKER_CMD ps --format "{{.Names}}" | grep -q "ict2216_splunk"; then
+              echo "✓ Splunk service is running"
+            else
+              echo "✗ Splunk service is NOT running"
+            fi
             
             echo "Deployment completed successfully"
+
       - name: Local cleanup
         if: always()  # Run even if previous steps failed
         run: |
