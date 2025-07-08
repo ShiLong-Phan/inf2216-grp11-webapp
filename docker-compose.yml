@@ -17,6 +17,7 @@ services:
       - ./bunkerweb-logs:/var/log/bunkerweb
       - ./app/errors/404.html:/var/www/html/crumbly.mooo.com/404.html
       - ./app/errors/403.html:/var/www/html/crumbly.mooo.com/403.html
+      - ./app/errors/default.html:/usr/share/bunkerweb/core/misc/files/default.html
     networks:
       - app-network
   
