@@ -72,7 +72,7 @@ jobs:
           
           # Find the PHP image by looking for the correct pattern
           # Note: The image name has a hyphen (-) not an underscore (_)
-          PHP_IMAGE_NAME="ict2216_php"
+          PHP_IMAGE_NAME="inf2216-grp11-webapp-php"
           
           # Verify image exists
           if docker image inspect $PHP_IMAGE_NAME > /dev/null 2>&1; then

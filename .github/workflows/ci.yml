@@ -112,7 +112,7 @@ jobs:
           docker images
           
           # Find the PHP image with the correct name pattern
-          PHP_IMAGE_NAME="ict2216_php"
+          PHP_IMAGE_NAME="inf2216-grp11-webapp-php"
           
           # Verify image exists
           if docker image inspect $PHP_IMAGE_NAME > /dev/null 2>&1; then
