@@ -139,14 +139,36 @@ jobs:
               }
             fi
             
-            # Check if user is in docker group, use sudo if needed
+            # Find docker-compose executable path
+            DOCKER_COMPOSE_PATH=$(which docker-compose 2>/dev/null || echo "")
+            if [ -z "$DOCKER_COMPOSE_PATH" ]; then
+              # Check common locations
+              for path in /usr/local/bin/docker-compose /usr/bin/docker-compose $HOME/.local/bin/docker-compose; do
+                if [ -x "$path" ]; then
+                  DOCKER_COMPOSE_PATH="$path"
+                  break
+                fi
+              done
+            fi
+            
+            # If still not found, install it
+            if [ -z "$DOCKER_COMPOSE_PATH" ]; then
+              echo "docker-compose not found, installing..."
+              sudo curl -L "https://github.com/docker/compose/releases/download/v2.17.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+              DOCKER_COMPOSE_PATH="/usr/local/bin/docker-compose"
+            fi
+            
+            echo "Using docker-compose at: $DOCKER_COMPOSE_PATH"
+            
+            # Set Docker commands with full paths
             if groups | grep -q docker; then
               DOCKER_CMD="docker"
-              DOCKER_COMPOSE_CMD="docker-compose"
+              DOCKER_COMPOSE_CMD="$DOCKER_COMPOSE_PATH"
               echo "User is in docker group, using direct docker commands"
             else
               DOCKER_CMD="sudo docker"
-              DOCKER_COMPOSE_CMD="sudo docker-compose"
+              DOCKER_COMPOSE_CMD="sudo $DOCKER_COMPOSE_PATH"
               echo "User not in docker group, using sudo for docker commands"
             fi
             
@@ -162,7 +184,6 @@ jobs:
               fi
             fi
             
-            
             # Stop all services first
             echo "Stopping all services..."
             $DOCKER_COMPOSE_CMD down || echo "Docker compose down failed, continuing"
@@ -173,7 +194,7 @@ jobs:
             
             # Start Splunk FIRST and wait for it to be ready
             echo "Starting Splunk container first..."
-            $DOCKER_COMPOSE_CMD up -d splunk || {
+            $DOCKER_COMPOSE_CMD up -d splunk --force-recreate || {
               echo "Splunk start failed, but continuing"
             }
             
@@ -181,7 +202,7 @@ jobs:
             echo "Waiting for Splunk to initialize..."
             SPLUNK_READY=false
             for i in {1..12}; do  # Try for 2 minutes (12 * 10 seconds)
-              if $DOCKER_CMD ps --format "table {{.Names}}\t{{.Status}}" | grep -q "ict2216_splunk.*healthy\|ict2216_splunk.*Up"; then
+              if $DOCKER_CMD ps --format "table {{.Names}}\t{{.Status}}" 2>/dev/null | grep -q "ict2216_splunk.*healthy\|ict2216_splunk.*Up"; then
                 echo "Splunk is ready (attempt $i)"
                 SPLUNK_READY=true
                 break
@@ -196,7 +217,7 @@ jobs:
             
             # Start database next (some services depend on it)
             echo "Starting database container..."
-            $DOCKER_COMPOSE_CMD up -d db || {
+            $DOCKER_COMPOSE_CMD up -d db --force-recreate || {
               echo "Database start failed, but continuing"
             }
             
@@ -206,55 +227,12 @@ jobs:
             
             # Start all remaining services
             echo "Starting all services..."
-            $DOCKER_COMPOSE_CMD up -d || {
+            $DOCKER_COMPOSE_CMD up -d --force-recreate || {
               echo "Failed to start all services, checking individual services..."
-              $DOCKER_COMPOSE_CMD ps
+              $DOCKER_COMPOSE_CMD ps || echo "Failed to list services"
               echo "Checking logs for errors:"
-              $DOCKER_COMPOSE_CMD logs --tail=20
+              $DOCKER_COMPOSE_CMD logs --tail=20 || echo "Failed to get logs"
             }
-            
-            # Final wait for all services to stabilize
-            echo "Waiting for all services to stabilize..."
-            sleep 10
-            
-            # Check if containers are running
-            echo "Final container status:"
-            $DOCKER_COMPOSE_CMD ps || echo "Failed to get container status"
-            
-            # Show detailed status
-            echo "Detailed container information:"
-            $DOCKER_CMD ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" || echo "Failed to list containers"
-            
-            # Clean up unused resources (be conservative)
-            echo "Cleaning up unused Docker resources..."
-            $DOCKER_CMD image prune -f || true
-            
-            # Check if key services are running
-            echo "Checking key services..."
-            if $DOCKER_CMD ps --format "{{.Names}}" | grep -q "ict2216_web"; then
-              echo "✓ Web service is running"
-            else
-              echo "✗ Web service is NOT running"
-            fi
-            
-            if $DOCKER_CMD ps --format "{{.Names}}" | grep -q "ict2216_php"; then
-              echo "✓ PHP service is running"
-            else
-              echo "✗ PHP service is NOT running"
-            fi
-            
-            if $DOCKER_CMD ps --format "{{.Names}}" | grep -q "ict2216_db"; then
-              echo "✓ Database service is running"
-            else
-              echo "✗ Database service is NOT running"
-            fi
-            
-            if $DOCKER_CMD ps --format "{{.Names}}" | grep -q "ict2216_splunk"; then
-              echo "✓ Splunk service is running"
-            else
-              echo "✗ Splunk service is NOT running"
-            fi
-            
             echo "Deployment completed successfully"
 
       - name: Local cleanup
