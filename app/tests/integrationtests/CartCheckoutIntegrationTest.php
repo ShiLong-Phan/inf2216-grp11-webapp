@@ -638,29 +638,7 @@ class CartCheckoutIntegrationTest extends TestCase
         $this->assertEquals($orderDetails['order_total'], $totalFromItems, "Order total should match sum of item subtotals");
     }
 
-    // TEST 7: Test complete cart and checkout process (integration test)
-    public function testCompleteCartAndCheckoutProcess(): void
-    {
-        // 1. Test user login
-        $this->simulateUserLogin();
-
-        // 2. Test adding products to cart
-        $this->addProductsToCart();
-
-        // 3. Test updating cart quantities
-        $this->testUpdateCartQuantities();
-
-        // 4. Test removing a product from cart
-        $this->testRemoveProductFromCart();
-
-        // 5. Test checkout process
-        $this->testCheckoutProcess();
-
-        // 6. Verify order confirmation
-        $this->testOrderConfirmation();
-    }
-
-    // TEST 8: Test stock validation during cart operations
+    // TEST 7: Test stock validation during cart operations
     public function testStockValidationInCart(): void
     {
         $this->simulateUserLogin();
@@ -707,7 +685,7 @@ class CartCheckoutIntegrationTest extends TestCase
         $this->assertGreaterThan($available, $quantity, 'Requested quantity should exceed available stock');
     }
 
-    // TEST 9: Test empty cart checkout
+    // TEST 8: Test empty cart checkout
     public function testEmptyCartCheckout(): void
     {
         $this->simulateUserLogin();
