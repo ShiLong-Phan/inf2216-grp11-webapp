@@ -40,7 +40,30 @@ if (isset($_GET['action'])) {
         $expiry = date('Y-m-d H:i:s', time() + 86400); // 24 hours from now
 
         // Check and create table if needed
-        // ... [existing code for table creation] ...
+        // First check if we already have the auth_tokens table
+        $check_table_sql = "SHOW TABLES LIKE 'auth_tokens'";
+        $check_table_result = $conn->query($check_table_sql);
+
+        // Create the table if it doesn't exist
+        if ($check_table_result->num_rows == 0) {
+            $create_table_sql = "CREATE TABLE `auth_tokens` (
+            `id` int(11) NOT NULL AUTO_INCREMENT,
+            `user_id` int(11) NOT NULL,
+            `token` varchar(128) NOT NULL,
+            `type` varchar(32) NOT NULL,
+            `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `expires_at` datetime NOT NULL,
+            `used` tinyint(1) NOT NULL DEFAULT 0,
+            `used_at` datetime DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `token` (`token`),
+            KEY `user_id` (`user_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+
+            if (!$conn->query($create_table_sql)) {
+                $errors[] = "Failed to create auth_tokens table: " . $conn->error;
+            }
+        }
 
         // Store token in database
         $token_sql = "INSERT INTO auth_tokens (user_id, token, type, expires_at) VALUES (?, ?, '2fa_activation', ?)";
@@ -158,73 +181,6 @@ function send2FAVerificationEmail($email, $firstName, $token)
     }
 }
 
-// Add this after the existing POST handler that updates profile info
-
-// Process 2FA enable request
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enable_2fa'])) {
-    // Generate a secure token
-    $token = generateSecureToken();
-    $user_id = $_SESSION['user_id'];
-    $expiry = date('Y-m-d H:i:s', time() + 86400); // 24 hours from now
-
-    // First check if we already have the auth_tokens table
-    $check_table_sql = "SHOW TABLES LIKE 'auth_tokens'";
-    $check_table_result = $conn->query($check_table_sql);
-
-    // Create the table if it doesn't exist
-    if ($check_table_result->num_rows == 0) {
-        $create_table_sql = "CREATE TABLE `auth_tokens` (
-            `id` int(11) NOT NULL AUTO_INCREMENT,
-            `user_id` int(11) NOT NULL,
-            `token` varchar(128) NOT NULL,
-            `type` varchar(32) NOT NULL,
-            `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            `expires_at` datetime NOT NULL,
-            `used` tinyint(1) NOT NULL DEFAULT 0,
-            `used_at` datetime DEFAULT NULL,
-            PRIMARY KEY (`id`),
-            UNIQUE KEY `token` (`token`),
-            KEY `user_id` (`user_id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-
-        if (!$conn->query($create_table_sql)) {
-            $errors[] = "Failed to create auth_tokens table: " . $conn->error;
-        }
-    }
-
-    // Store token in database
-    $token_sql = "INSERT INTO auth_tokens (user_id, token, type, expires_at) VALUES (?, ?, '2fa_activation', ?)";
-    $token_stmt = $conn->prepare($token_sql);
-    $token_stmt->bind_param("iss", $user_id, $token, $expiry);
-
-    if ($token_stmt->execute()) {
-        // Send verification email
-        if (send2FAVerificationEmail($_SESSION['user_email'], $_SESSION['user_firstname'], $token)) {
-            $success_message = "A verification email has been sent to enable two-factor authentication. Please check your inbox.";
-        } else {
-            $errors[] = "Could not send verification email. Please try again.";
-        }
-    } else {
-        $errors[] = "Failed to process your request. Please try again.";
-    }
-}
-
-// Handle 2FA disable request
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['disable_2fa'])) {
-    $user_id = $_SESSION['user_id'];
-
-    // Update user's 2FA status
-    $update_sql = "UPDATE users SET user_verified = 0 WHERE user_id = ?";
-    $update_stmt = $conn->prepare($update_sql);
-    $update_stmt->bind_param("i", $user_id);
-
-    if ($update_stmt->execute()) {
-        $success_message = "Two-factor authentication has been disabled for your account.";
-    } else {
-        $errors[] = "Failed to disable two-factor authentication. Please try again.";
-    }
-}
-
 // Get user information from database
 $sql = "SELECT user_firstname, user_lastname, user_email, user_address, user_verified FROM users WHERE user_id = ?";
 $stmt = $conn->prepare($sql);
@@ -242,7 +198,7 @@ if ($result->num_rows === 1) {
 }
 
 // Process form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['enable_2fa']) && !isset($_POST['disable_2fa'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['first_name']) ) {
     // Sanitize form data
     $first_name = sanitizeInput($_POST['first_name']);
     $last_name = sanitizeInput($_POST['last_name']);
