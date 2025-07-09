@@ -15,3 +15,7 @@ RUN docker-php-ext-install mysqli
 # RUN docker-php-ext-install pdo pdo_mysql gd
 
 # Any other custom configurations for your PHP service can go here
+# Install PHPUnit
+RUN curl -LO https://phar.phpunit.de/phpunit-9.phar \
+    && chmod +x phpunit-9.phar \
+    && mv phpunit-9.phar /usr/local/bin/phpunit
