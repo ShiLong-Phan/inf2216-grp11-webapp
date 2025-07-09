@@ -239,8 +239,58 @@ $category_description = isset($category_descriptions[$category]) ? $category_des
                     1200: { slidesPerView: 5 }
                 }
             });
+              function showNotification(type, message) {
+                const n = document.createElement('div');
+                n.className = `alert alert-${type==='success'?'success':'danger'} notification`;
+                n.textContent = message;
+                document.body.appendChild(n);
+                setTimeout(()=> n.remove(),3000);
+            }
+            
+            function updateCartDisplay() {
+                setTimeout(()=> window.location.reload(),1000);
+            }
+
+            document.querySelectorAll('.add-to-cart').forEach(btn => {
+                btn.addEventListener('click', e => {
+                e.preventDefault();
+                const id  = btn.dataset.productId;
+                const qty = btn.closest('.product-item')
+                                .querySelector('input[name="quantity"]')?.value || 1;
+                const fd  = new FormData();
+                fd.append('product_id', id);
+                fd.append('quantity', qty);
+
+                fetch('add-to-cart.php', { method:'POST', body:fd })
+                    .then(r=> r.json())
+                    .then(json=> {
+                    if (json.success) showNotification('success', json.message);
+                    else             showNotification('error',   json.message);
+                    updateCartDisplay();
+                    })
+                    .catch(err=> {
+                    console.error(err);
+                    showNotification('error','Could not add to cart.');
+                    });
+                });
+            });
         });
     </script>
+    
+    <style>
+    /* Notification styles */
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 250px;
+        padding: 15px;
+        border-radius: 4px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        opacity: 0.9;
+    }
+</style>
 
     <?php include 'utils/footer.php'; ?>
     </body>
