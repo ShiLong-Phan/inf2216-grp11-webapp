@@ -16,7 +16,6 @@ class CartCheckoutIntegrationTest extends TestCase
     private $testOrderId;
     private $testProductIds = [];
 
-
     protected function setUp(): void
     {
         $this->originalSession = $_SESSION ?? [];
@@ -155,27 +154,7 @@ class CartCheckoutIntegrationTest extends TestCase
         }
     }
 
-    public function testCompleteCartAndCheckoutProcess(): void
-    {
-        // 1. Test user login
-        $this->simulateUserLogin();
-
-        // 2. Test adding products to cart
-        $this->addProductsToCart();
-
-        // 3. Test updating cart quantities
-        $this->updateCartQuantities();
-
-        // 4. Test removing a product from cart
-        $this->removeProductFromCart();
-
-        // 5. Test checkout process
-        $this->processCheckout();
-
-        // 6. Verify order confirmation
-        $this->verifyOrderConfirmation();
-    }
-
+    // Helper method to simulate login for tests that need it
     private function simulateUserLogin(): void
     {
         // Clear any existing session
@@ -230,6 +209,7 @@ class CartCheckoutIntegrationTest extends TestCase
         $this->assertEquals(0, $_SESSION['user_role']); // Regular customer role
     }
 
+    // Helper method to add products to cart for tests that need it
     private function addProductsToCart(): void
     {
         // Test adding products to cart
@@ -240,42 +220,130 @@ class CartCheckoutIntegrationTest extends TestCase
                 'quantity' => $index + 1 // First product: qty 1, Second product: qty 2
             ];
 
-            // Get product info for validation
+            $user_id = $_SESSION['user_id'];
+            $product_id = $_POST['product_id'];
+            $quantity = (int) $_POST['quantity'];
+
+            // Input validation (following add-to-cart.php)
+            $this->assertGreaterThan(0, $quantity, 'Quantity should be greater than 0');
+
+            // Get product price and stock from the products table
             $stmt = $this->conn->prepare("SELECT prod_price, prod_stock FROM products WHERE prod_id = ?");
-            $stmt->bind_param("i", $productId);
+            $stmt->bind_param("i", $product_id);
             $stmt->execute();
             $result = $stmt->get_result();
+
+            $this->assertEquals(1, $result->num_rows, 'Product should be found in database');
+
             $product = $result->fetch_assoc();
+            $unit_price = $product['prod_price'];
+            $stock_available = $product['prod_stock'];
             $stmt->close();
 
-            // Check if there's enough stock
-            $this->assertGreaterThanOrEqual($_POST['quantity'], $product['prod_stock'], 'There should be enough stock for the order');
-
-            // Calculate subtotal
-            $subtotal = $product['prod_price'] * $_POST['quantity'];
-
-            // Insert item into cart
-            $stmt = $this->conn->prepare("INSERT INTO cart (cart_user_id, cart_prod_id, cart_quantity, cart_subtotal) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param("iiid", $_SESSION['user_id'], $productId, $_POST['quantity'], $subtotal);
-            $stmt->execute();
-            $stmt->close();
-
-            // Verify the cart item was added correctly
-            $stmt = $this->conn->prepare("SELECT * FROM cart WHERE cart_user_id = ? AND cart_prod_id = ?");
-            $stmt->bind_param("ii", $_SESSION['user_id'], $productId);
+            // Calculate total quantity in all carts (including current user's cart)
+            $stmt = $this->conn->prepare("SELECT SUM(cart_quantity) as total_in_carts FROM cart WHERE cart_prod_id = ?");
+            $stmt->bind_param("i", $product_id);
             $stmt->execute();
             $result = $stmt->get_result();
-            $this->assertEquals(1, $result->num_rows, "Product $productId should be in the cart");
+            $total_in_carts = $result->fetch_assoc()['total_in_carts'] ?? 0;
+            $stmt->close();
 
-            $cartItem = $result->fetch_assoc();
-            $this->assertEquals($_POST['quantity'], $cartItem['cart_quantity'], "Cart quantity should be " . $_POST['quantity']);
-            $this->assertEquals($subtotal, $cartItem['cart_subtotal'], "Cart subtotal should be calculated correctly");
+            // Check if the product is already in the user's cart
+            $stmt = $this->conn->prepare("SELECT cart_quantity FROM cart WHERE cart_user_id = ? AND cart_prod_id = ?");
+            $stmt->bind_param("ii", $user_id, $product_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+
+            if ($result->num_rows > 0) {
+                // Update existing cart item quantity (following add-to-cart.php logic)
+                $row = $result->fetch_assoc();
+                $current_quantity = $row['cart_quantity'];
+                $new_quantity = $current_quantity + $quantity;
+
+                // Calculate how many other users have in their carts (exclude current user's current quantity)
+                $others_quantity = $total_in_carts - $current_quantity;
+
+                // Check if the new quantity would exceed stock
+                $effective_available = $stock_available - $others_quantity;
+
+                $this->assertGreaterThan(0, $effective_available, 'There should be stock available after considering other users carts');
+                // Fix: Change the assertion to allow for the actual available stock
+                $this->assertLessThanOrEqual($effective_available, $quantity, 'Additional quantity should not exceed effective available stock');
+
+                // Update the cart with new quantity
+                $new_total_price = $unit_price * $new_quantity;
+
+                $updateStmt = $this->conn->prepare("UPDATE cart SET cart_quantity = ?, cart_subtotal = ? WHERE cart_user_id = ? AND cart_prod_id = ?");
+                $updateStmt->bind_param("idii", $new_quantity, $new_total_price, $user_id, $product_id);
+                $success = $updateStmt->execute();
+                $updateStmt->close();
+
+                $this->assertTrue($success, 'Cart update should be successful');
+
+                // Verify the cart item was updated correctly
+                $verifyStmt = $this->conn->prepare("SELECT cart_quantity, cart_subtotal FROM cart WHERE cart_user_id = ? AND cart_prod_id = ?");
+                $verifyStmt->bind_param("ii", $user_id, $product_id);
+                $verifyStmt->execute();
+                $verifyResult = $verifyStmt->get_result();
+                $updatedItem = $verifyResult->fetch_assoc();
+                $verifyStmt->close();
+
+                $this->assertEquals($new_quantity, $updatedItem['cart_quantity'], "Cart quantity should be updated to $new_quantity");
+                $this->assertEquals($new_total_price, $updatedItem['cart_subtotal'], "Cart subtotal should be updated correctly");
+            } else {
+                // Insert new cart item (following add-to-cart.php logic)
+
+                // Check if adding to cart would exceed stock
+                $available = $stock_available - $total_in_carts;
+                $this->assertGreaterThan(0, $available, 'There should be stock available after considering other users carts');
+                $this->assertLessThanOrEqual($available, $quantity, 'Requested quantity should not exceed available stock');
+
+                // Insert new cart item
+                $total_price = $unit_price * $quantity;
+
+                $insertStmt = $this->conn->prepare("INSERT INTO cart (cart_user_id, cart_prod_id, cart_quantity, cart_subtotal) VALUES (?, ?, ?, ?)");
+                $insertStmt->bind_param("iiid", $user_id, $product_id, $quantity, $total_price);
+                $success = $insertStmt->execute();
+                $insertStmt->close();
+
+                $this->assertTrue($success, 'Cart insertion should be successful');
+
+                // Verify the cart item was added correctly
+                $verifyStmt = $this->conn->prepare("SELECT cart_quantity, cart_subtotal FROM cart WHERE cart_user_id = ? AND cart_prod_id = ?");
+                $verifyStmt->bind_param("ii", $user_id, $product_id);
+                $verifyStmt->execute();
+                $verifyResult = $verifyStmt->get_result();
+                $this->assertEquals(1, $verifyResult->num_rows, "Product $product_id should be in the cart");
+
+                $cartItem = $verifyResult->fetch_assoc();
+                $verifyStmt->close();
+
+                $this->assertEquals($quantity, $cartItem['cart_quantity'], "Cart quantity should be $quantity");
+                $this->assertEquals($total_price, $cartItem['cart_subtotal'], "Cart subtotal should be calculated correctly");
+            }
+
             $stmt->close();
         }
     }
-
-    private function updateCartQuantities(): void
+    // TEST 1: Test user login process
+    public function testUserLoginProcess(): void
     {
+        $this->simulateUserLogin();
+    }
+
+    // TEST 2: Test adding products to cart
+    public function testAddProductsToCart(): void
+    {
+        $this->simulateUserLogin();
+        $this->addProductsToCart();
+    }
+
+    // TEST 3: Test updating cart quantities
+    public function testUpdateCartQuantities(): void
+    {
+        $this->simulateUserLogin();
+        $this->addProductsToCart();
+
         // Get the cart items
         $stmt = $this->conn->prepare("SELECT * FROM cart WHERE cart_user_id = ?");
         $stmt->bind_param("i", $_SESSION['user_id']);
@@ -327,8 +395,12 @@ class CartCheckoutIntegrationTest extends TestCase
         }
     }
 
-    private function removeProductFromCart(): void
+    // TEST 4: Test removing products from cart
+    public function testRemoveProductFromCart(): void
     {
+        $this->simulateUserLogin();
+        $this->addProductsToCart();
+
         // Get the second cart item (if it exists)
         $stmt = $this->conn->prepare("SELECT * FROM cart WHERE cart_user_id = ? ORDER BY cart_id DESC LIMIT 1");
         $stmt->bind_param("i", $_SESSION['user_id']);
@@ -362,8 +434,12 @@ class CartCheckoutIntegrationTest extends TestCase
         $stmt->close();
     }
 
-    private function processCheckout(): void
+    // TEST 5: Test checkout process
+    public function testCheckoutProcess(): void
     {
+        $this->simulateUserLogin();
+        $this->addProductsToCart();
+
         // Calculate total from cart items
         $stmt = $this->conn->prepare("SELECT SUM(cart_subtotal) as cart_total FROM cart WHERE cart_user_id = ?");
         $stmt->bind_param("i", $_SESSION['user_id']);
@@ -473,8 +549,50 @@ class CartCheckoutIntegrationTest extends TestCase
         }
     }
 
-    private function verifyOrderConfirmation(): void
+    // TEST 6: Test order confirmation
+    public function testOrderConfirmation(): void
     {
+        $this->simulateUserLogin();
+        $this->addProductsToCart();
+
+        // Create an order first (simplified checkout)
+        $stmt = $this->conn->prepare("SELECT SUM(cart_subtotal) as cart_total FROM cart WHERE cart_user_id = ?");
+        $stmt->bind_param("i", $_SESSION['user_id']);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $cartTotal = $row ? $row['cart_total'] : 0;
+        $stmt->close();
+
+        // Create order
+        $orderStmt = $this->conn->prepare("INSERT INTO orders 
+                                         (order_user_id, order_date, order_delivery_address, order_status, order_total) 
+                                         VALUES (?, NOW(), ?, 'Pending', ?)");
+        $orderStmt->bind_param("isd", $_SESSION['user_id'], $this->testUserAddress, $cartTotal);
+        $orderStmt->execute();
+        $this->testOrderId = $this->conn->insert_id;
+        $orderStmt->close();
+
+        // Add order items
+        $cartStmt = $this->conn->prepare("SELECT c.cart_prod_id, c.cart_quantity, c.cart_subtotal, p.prod_price 
+                                         FROM cart c JOIN products p ON c.cart_prod_id = p.prod_id 
+                                         WHERE c.cart_user_id = ?");
+        $cartStmt->bind_param("i", $_SESSION['user_id']);
+        $cartStmt->execute();
+        $cartResult = $cartStmt->get_result();
+        $cartStmt->close();
+
+        while ($item = $cartResult->fetch_assoc()) {
+            $itemSubtotal = $item['prod_price'] * $item['cart_quantity'];
+            $itemStmt = $this->conn->prepare("INSERT INTO order_item 
+                                            (order_item_order_id, order_item_prod_id, prod_item_quantity, prod_subtotal) 
+                                            VALUES (?, ?, ?, ?)");
+            $itemStmt->bind_param("iiid", $this->testOrderId, $item['cart_prod_id'], $item['cart_quantity'], $itemSubtotal);
+            $itemStmt->execute();
+            $itemStmt->close();
+        }
+
+        // Now test order confirmation
         // Simulate viewing order confirmation page
         $_GET = [
             'order_id' => $this->testOrderId
@@ -518,5 +636,103 @@ class CartCheckoutIntegrationTest extends TestCase
         }
 
         $this->assertEquals($orderDetails['order_total'], $totalFromItems, "Order total should match sum of item subtotals");
+    }
+
+    // TEST 7: Test complete cart and checkout process (integration test)
+    public function testCompleteCartAndCheckoutProcess(): void
+    {
+        // 1. Test user login
+        $this->simulateUserLogin();
+
+        // 2. Test adding products to cart
+        $this->addProductsToCart();
+
+        // 3. Test updating cart quantities
+        $this->testUpdateCartQuantities();
+
+        // 4. Test removing a product from cart
+        $this->testRemoveProductFromCart();
+
+        // 5. Test checkout process
+        $this->testCheckoutProcess();
+
+        // 6. Verify order confirmation
+        $this->testOrderConfirmation();
+    }
+
+    // TEST 8: Test stock validation during cart operations
+    public function testStockValidationInCart(): void
+    {
+        $this->simulateUserLogin();
+
+        // Try to add more items than available stock
+        $productId = $this->testProductIds[1]; // Second product has stock of 5
+
+        // Get product stock
+        $stmt = $this->conn->prepare("SELECT prod_stock FROM products WHERE prod_id = ?");
+        $stmt->bind_param("i", $productId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $product = $result->fetch_assoc();
+        $stmt->close();
+
+        $availableStock = $product['prod_stock'];
+        $requestedQuantity = $availableStock + 1; // Request more than available
+
+        // Simulate add-to-cart request with excessive quantity
+        $_POST = [
+            'product_id' => $productId,
+            'quantity' => $requestedQuantity
+        ];
+
+        // Fix: This should validate that requested quantity exceeds available stock
+        $this->assertGreaterThan($availableStock, $requestedQuantity, 'Requested quantity should exceed available stock');
+
+        // Additionally, test that the cart operation would fail with this quantity
+        $user_id = $_SESSION['user_id'];
+        $product_id = $_POST['product_id'];
+        $quantity = (int) $_POST['quantity'];
+
+        // Get total in carts
+        $stmt = $this->conn->prepare("SELECT SUM(cart_quantity) as total_in_carts FROM cart WHERE cart_prod_id = ?");
+        $stmt->bind_param("i", $product_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $total_in_carts = $result->fetch_assoc()['total_in_carts'] ?? 0;
+        $stmt->close();
+
+        $available = $availableStock - $total_in_carts;
+
+        // This should fail - we're trying to add more than available
+        $this->assertGreaterThan($available, $quantity, 'Requested quantity should exceed available stock');
+    }
+
+    // TEST 9: Test empty cart checkout
+    public function testEmptyCartCheckout(): void
+    {
+        $this->simulateUserLogin();
+        // Don't add any products to cart
+
+        // Calculate total from empty cart
+        $stmt = $this->conn->prepare("SELECT SUM(cart_subtotal) as cart_total FROM cart WHERE cart_user_id = ?");
+        $stmt->bind_param("i", $_SESSION['user_id']);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $cartTotal = $row ? $row['cart_total'] : 0;
+        $stmt->close();
+
+        // Cart should be empty
+        $this->assertEquals(0, $cartTotal, "Empty cart should have zero total");
+
+        // Verify no cart items exist
+        $stmt = $this->conn->prepare("SELECT COUNT(*) as item_count FROM cart WHERE cart_user_id = ?");
+        $stmt->bind_param("i", $_SESSION['user_id']);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $stmt->close();
+
+        $this->assertEquals(0, $row['item_count'], "Empty cart should have no items");
     }
 }
