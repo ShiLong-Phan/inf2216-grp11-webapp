@@ -28,9 +28,69 @@ $errors = [];
 $first_name = '';
 $last_name = '';
 $email = '';
+$twofa_enabled = '';
 $address = '';
 
 //2FA
+if (isset($_GET['action'])) {
+    if ($_GET['action'] === 'enable2fa') {
+        // Copy the 2FA enable code here
+        $token = generateSecureToken();
+        $user_id = $_SESSION['user_id'];
+        $expiry = date('Y-m-d H:i:s', time() + 86400); // 24 hours from now
+
+        // Check and create table if needed
+        // ... [existing code for table creation] ...
+
+        // Store token in database
+        $token_sql = "INSERT INTO auth_tokens (user_id, token, type, expires_at) VALUES (?, ?, '2fa_activation', ?)";
+        $token_stmt = $conn->prepare($token_sql);
+        $token_stmt->bind_param("iss", $user_id, $token, $expiry);
+
+        if ($token_stmt->execute()) {
+            if (send2FAVerificationEmail($_SESSION['user_email'], $_SESSION['user_firstname'], $token)) {
+                $success_message = "A verification email has been sent to enable two-factor authentication. Please check your inbox.";
+            } else {
+                $errors[] = "Could not send verification email. Please try again.";
+            }
+        } else {
+            $errors[] = "Failed to process your request. Please try again.";
+        }
+
+        // Redirect back to profile page to avoid resubmission
+        header("Location: profile.php?2fa_sent=true");
+        exit();
+    }
+
+    if ($_GET['action'] === 'disable2fa') {
+        // Copy the 2FA disable code here
+        $user_id = $_SESSION['user_id'];
+        $update_sql = "UPDATE users SET user_verified = 0 WHERE user_id = ?";
+        $update_stmt = $conn->prepare($update_sql);
+        $update_stmt->bind_param("i", $user_id);
+
+        if ($update_stmt->execute()) {
+            $success_message = "Two-factor authentication has been disabled for your account.";
+        } else {
+            $errors[] = "Failed to disable two-factor authentication. Please try again.";
+        }
+
+        // Redirect back to profile page
+        header("Location: profile.php?2fa_disabled=true");
+        exit();
+    }
+}
+
+// And handle the redirect parameters
+if (isset($_GET['2fa_sent'])) {
+    $success_message = "A verification email has been sent to enable two-factor authentication. Please check your inbox.";
+}
+
+if (isset($_GET['2fa_disabled'])) {
+    $success_message = "Two-factor authentication has been disabled for your account.";
+}
+
+
 // Function to generate a secure token
 function generateSecureToken($length = 64)
 {
@@ -166,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['disable_2fa'])) {
 }
 
 // Get user information from database
-$sql = "SELECT user_firstname, user_lastname, user_email, user_address FROM users WHERE user_id = ?";
+$sql = "SELECT user_firstname, user_lastname, user_email, user_address, user_verified FROM users WHERE user_id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
@@ -177,7 +237,8 @@ if ($result->num_rows === 1) {
     $first_name = $user['user_firstname'];
     $last_name = $user['user_lastname'];
     $email = $user['user_email'];
-    $address = $user['user_address'] ?? '';
+    $address = $user['user_address'];
+    $twofa_enabled = $user['user_verified'];
 }
 
 // Process form submission
@@ -329,7 +390,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['enable_2fa']) && !is
                     <?php endif; ?>
 
                     <div class="row">
-                        \ <div class="col-md-3 col-lg-3 mb-4">
+                        <div class="col-md-3 col-lg-3 mb-4">
                             <div class="card border-0 shadow-lg rounded-4 overflow-hidden bg-primary text-white"
                                 style="box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;">
                                 <div class="card-body p-3">
@@ -444,67 +505,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['enable_2fa']) && !is
                                                         Two-Factor Authentication
                                                     </label>
                                                     <div class="mt-2">
-                                                        <?php
-                                                        // Check if 2FA is already enabled for this user
-                                                        $check2fa_sql = "SELECT user_verified FROM users WHERE user_id = ?";
-                                                        $check2fa_stmt = $conn->prepare($check2fa_sql);
-                                                        $check2fa_stmt->bind_param("i", $_SESSION['user_id']);
-                                                        $check2fa_stmt->execute();
-                                                        $check2fa_result = $check2fa_stmt->get_result();
-                                                        $user2fa = $check2fa_result->fetch_assoc();
-
-                                                        if ($user2fa['user_verified'] == 1):
-                                                            ?>
-                                                            <div class="alert alert-success d-flex align-items-center"
-                                                                role="alert">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="20"
-                                                                    height="20" fill="currentColor"
-                                                                    class="bi bi-check-circle-fill me-2"
-                                                                    viewBox="0 0 16 16">
-                                                                    <path
-                                                                        d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
-                                                                </svg>
-                                                                <div>
-                                                                    Email 2FA is currently <strong>enabled</strong> for your
-                                                                    account.
-                                                                </div>
+                                                        <?php if ($twofa_enabled == 1): ?>
+                                                            <div class="alert alert-success d-flex align-items-center" role="alert">
+                                                                2FA is Enabled
                                                             </div>
-                                                            <form action="profile.php" method="post" class="mt-2">
-                                                                <input type="hidden" name="disable_2fa" value="1">
-                                                                <button type="submit" class="btn btn-outline-danger"
-                                                                    name="disable_2fa_btn">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16"
-                                                                        height="16" fill="currentColor"
-                                                                        class="bi bi-shield-lock-fill me-2"
-                                                                        viewBox="0 0 16 16">
-                                                                        <path fill-rule="evenodd"
-                                                                            d="M8 0c-.69 0-1.843.265-2.928.56-1.11.3-2.229.655-2.887.87a1.54 1.54 0 0 0-1.044 1.262c-.596 4.477.787 7.795 2.465 9.99a11.777 11.777 0 0 0 2.517 2.453c.386.273.744.482 1.048.625.28.132.581.24.829.24s.548-.108.829-.24a7.159 7.159 0 0 0 1.048-.625 11.775 11.775 0 0 0 2.517-2.453c1.678-2.195 3.061-5.513 2.465-9.99a1.541 1.541 0 0 0-1.044-1.263 62.467 62.467 0 0 0-2.887-.87C9.843.266 8.69 0 8 0zm0 5a1.5 1.5 0 0 1 .5 2.915l.385 1.99a.5.5 0 0 1-.491.595h-.788a.5.5 0 0 1-.49-.595l.384-1.99A1.5 1.5 0 0 1 8 5z" />
-                                                                    </svg>
-                                                                    Disable 2FA
-                                                                </button>
-                                                            </form>
+                                                            <!-- Use a link with JavaScript instead of a nested form -->
+                                                            <a href="profile.php?action=disable2fa" class="btn btn-outline-danger">Disable 2FA</a>
                                                         <?php else: ?>
-                                                            <p class="text-muted mb-2"
-                                                                style="max-width: 100%; word-wrap: break-word; overflow-wrap: break-word;">
-                                                                Enable two-factor authentication to add an extra layer of
-                                                                security to your account.
-                                                                When enabled, you'll need to enter a verification code sent
-                                                                to your email each time you sign in.
+                                                            <p class="text-muted mb-2">
+                                                                Enable two-factor authentication to add an extra layer of security to your account.
                                                             </p>
-                                                            <form action="profile.php" method="post">
-                                                                <input type="hidden" name="enable_2fa" value="1">
-                                                                <button type="submit" class="btn btn-primary"
-                                                                    name="enable_2fa_btn">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16"
-                                                                        height="16" fill="currentColor"
-                                                                        class="bi bi-shield-lock-fill me-2"
-                                                                        viewBox="0 0 16 16">
-                                                                        <path fill-rule="evenodd"
-                                                                            d="M8 0c-.69 0-1.843.265-2.928.56-1.11.3-2.229.655-2.887.87a1.54 1.54 0 0 0-1.044 1.262c-.596 4.477.787 7.795 2.465 9.99a11.777 11.777 0 0 0 2.517 2.453c.386.273.744.482 1.048.625.28.132.581.24.829.24s.548-.108.829-.24a7.159 7.159 0 0 0 1.048-.625 11.775 11.775 0 0 0 2.517-2.453c1.678-2.195 3.061-5.513 2.465-9.99a1.541 1.541 0 0 0-1.044-1.263 62.467 62.467 0 0 0-2.887-.87C9.843.266 8.69 0 8 0zm0 5a1.5 1.5 0 0 1 .5 2.915l.385 1.99a.5.5 0 0 1-.491.595h-.788a.5.5 0 0 1-.49-.595l.384-1.99A1.5 1.5 0 0 1 8 5z" />
-                                                                    </svg>
-                                                                    Enable Email 2FA
-                                                                </button>
-                                                            </form>
+                                                            <!-- Use a link with JavaScript instead of a nested form -->
+                                                            <a href="profile.php?action=enable2fa" class="btn btn-primary">Enable Email 2FA</a>
                                                         <?php endif; ?>
                                                     </div>
                                                 </div>
@@ -606,14 +618,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['enable_2fa']) && !is
                                                     <div id="password-match-feedback" class="form-text"></div>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <div class="row mt-4">
-                                            <div class="col-12">
-                                                <div class="d-grid">
-                                                    <button type="submit"
-                                                        class="btn btn-primary btn-lg py-3 shadow">Update
-                                                        Profile</button>
+                                            <div class="row mt-4">
+                                                <div class="col-12">
+                                                    <div class="d-grid">
+                                                        <button type="submit"
+                                                            class="btn btn-primary btn-lg py-3 shadow">Update Profile</button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -630,14 +640,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['enable_2fa']) && !is
     <?php include 'utils/footer.php'; ?>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             // Toggle password visibility functions
             function setupPasswordToggle(buttonId, inputId) {
                 const toggleBtn = document.getElementById(buttonId);
                 const input = document.getElementById(inputId);
 
                 if (toggleBtn && input) {
-                    toggleBtn.addEventListener('click', function () {
+                    toggleBtn.addEventListener('click', function() {
                         // Toggle type attribute
                         const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
                         input.setAttribute('type', type);
@@ -675,7 +685,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['enable_2fa']) && !is
 
             if (newPassword && confirmPassword) {
                 // Check password requirements
-                newPassword.addEventListener('input', function () {
+                newPassword.addEventListener('input', function() {
                     const value = this.value;
 
                     // Check length
