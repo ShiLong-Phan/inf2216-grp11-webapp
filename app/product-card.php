@@ -48,14 +48,19 @@ $isOutOfStock = isset($product['prod_stock']) && $product['prod_stock'] <= 0;
             </div>
         <?php endif; ?>
 
-        <figure>
-            <a href="product-detail.php?id=<?php echo $product['prod_id']; ?>"
-                title="<?php echo htmlspecialchars($product['prod_name']); ?>">
-                <img src="<?php echo !empty($product['prod_image']) ? $product['prod_image'] : 'images/product-placeholder.png'; ?>"
-                    class="tab-image <?php echo $isOutOfStock ? 'grayscale' : ''; ?>"
-                    alt="<?php echo htmlspecialchars($product['prod_name']); ?>">
-            </a>
-        </figure>
+       <figure>
+  <a href="product-detail.php?id=<?php echo $product['prod_id']; ?>"
+     title="<?php echo htmlspecialchars($product['prod_name']); ?>">
+    <img
+      src="<?php echo !empty($product['prod_image'])
+                ? $product['prod_image']
+                : 'images/product-placeholder.png'; ?>"
+      class="img-fluid tab-image <?php echo $isOutOfStock ? 'grayscale' : ''; ?>"
+      alt="<?php echo htmlspecialchars($product['prod_name']); ?>"
+    >
+  </a>
+</figure>
+
 
         <h3><?php echo htmlspecialchars($product['prod_name']); ?></h3>
         <span class="qty">1 Unit</span>
