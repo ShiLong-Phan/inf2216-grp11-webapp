@@ -7,49 +7,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* Banner styles to ensure proper containment */
-    .banner-section {
-      width: 100vw;
-      /* Use viewport width instead of percentage */
-      max-width: 100vw;
-      overflow: hidden;
-      position: relative;
-      margin-left: calc(-50vw + 50%);
-      /* Technique to break out of containers */
-      margin-right: calc(-50vw + 50%);
-      margin-bottom: 50px;
-    }
+ /* ——————————————————————
+   Banner: responsive & centered
+   —————————————————————— */
+.banner-section {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 auto 50px;
+  overflow: hidden;
+  position: relative;
+  padding: 0;
+}
 
-    .banner-container {
-      width: 100%;
-      margin: 0;
-      padding: 0;
-      display: block;
-    }
+/* mobile → tablet: leave 15 px gutters */
+@media (max-width: 991.98px) {
+  .banner-section {
+    width: calc(100% - 30px);
+    margin: 0 auto 50px;
+    padding: 0 15px;
+  }
+}
 
-    .banner-image {
-      width: 100%;
-      height: auto;
-      display: block;
-      object-fit: cover;
-    }
 
-    /* Remove extra margins and padding */
-    .container-fluid.px-0 {
-      padding-left: 0 !important;
-      padding-right: 0 !important;
-      overflow-x: hidden;
-      /* Prevent horizontal scroll */
-      max-width: none !important;
-      /* Override Bootstrap max-width */
-    }
 
-    /* Force banner to break out of any containers */
-    @media (min-width: 1200px) {
-      .container-fluid.px-0 {
-        max-width: none !important;
-      }
-    }
   </style>
   <?php include 'utils/header.php'; ?>
 </head>
@@ -58,12 +38,16 @@
   <?php include 'utils/navbar.php'; ?>
 
   <div class="container-fluid px-0">
-    <!-- Banner section -->
-    <div class="banner-section">
-      <div class="banner-container">
-        <img src="images/crumbly-banner.png" alt="Crumbly Banner" class="banner-image">
+    <div class="container">
+      <div class="banner-section">
+        <div class="banner-container">
+          <img src="images/crumbly-banner_resized.png"
+              alt="Crumbly Banner"
+              class="banner-image">
+        </div>
       </div>
     </div>
+  </div>
 
     <div class="container">
       <!-- Category section -->
