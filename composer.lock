@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b689b773e5a273c03acfd7797a8d810c",
+    "content-hash": "2371bf388b05eba498e14eb2aaeb121b",
     "packages": [
         {
             "name": "stripe/stripe-php",
-            "version": "v17.4.0",
+            "version": "v19.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/stripe/stripe-php.git",
-                "reference": "893946057e43b145826b0dfd7f398673e381e2ae"
+                "reference": "4e3de7211645699b1f5b5f1f1b45bd9faf369426"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/stripe/stripe-php/zipball/893946057e43b145826b0dfd7f398673e381e2ae",
-                "reference": "893946057e43b145826b0dfd7f398673e381e2ae",
+                "url": "https://api.github.com/repos/stripe/stripe-php/zipball/4e3de7211645699b1f5b5f1f1b45bd9faf369426",
+                "reference": "4e3de7211645699b1f5b5f1f1b45bd9faf369426",
                 "shasum": ""
             },
             "require": {
@@ -61,9 +61,9 @@
             ],
             "support": {
                 "issues": "https://github.com/stripe/stripe-php/issues",
-                "source": "https://github.com/stripe/stripe-php/tree/v17.4.0"
+                "source": "https://github.com/stripe/stripe-php/tree/v19.1.0"
             },
-            "time": "2025-07-01T20:23:15+00:00"
+            "time": "2025-12-16T19:48:17+00:00"
         }
     ],
     "packages-dev": [],
